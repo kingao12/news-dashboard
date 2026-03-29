@@ -4,7 +4,13 @@ import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
 import { Globe, TrendingUp, TrendingDown } from 'lucide-react';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('API Error');
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+};
 const fmtB = (v: number) => `$${v.toLocaleString()}B`;
 
 export default function TradeWidget() {

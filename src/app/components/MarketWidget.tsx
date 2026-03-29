@@ -7,10 +7,13 @@ import dynamic from 'next/dynamic';
 import { calculateSMMA, calculateRSI, calculateVWMA } from '../utils/indicators';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
-const fetcher = (url: string) => fetch(url).then(r => {
+const fetcher = async (url: string) => {
+  const r = await fetch(url);
   if (!r.ok) throw new Error('API Error');
-  return r.json();
-});
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  return d;
+};
 
 const INTERVALS = [
   { label: '1분', value: '1m' },

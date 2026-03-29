@@ -5,7 +5,13 @@ import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGri
 import { DollarSign, Droplets, Ship, Bitcoin, Activity } from 'lucide-react';
 import WidgetSkeleton from './WidgetSkeleton';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('API Error');
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+};
 
 const LiveMacroValue = memo(({ baseValue, type = 'number', decimals = 0, prefix = '', suffix = '', jitterSpeed = 3000 }: { 
   baseValue: number, 
