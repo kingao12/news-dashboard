@@ -3,6 +3,8 @@ import { ExternalLink, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+import { useState, useEffect } from 'react';
+
 interface NewsItem {
   id: string;
   title: string;
@@ -14,14 +16,17 @@ interface NewsItem {
 }
 
 export default function NewsCard({ item }: { item: NewsItem }) {
-  let timeAgo = '';
-  try {
-    if (item.pubDate) {
-      timeAgo = formatDistanceToNow(new Date(item.pubDate), { addSuffix: true, locale: ko });
+  const [timeAgo, setTimeAgo] = useState('');
+
+  useEffect(() => {
+    try {
+      if (item.pubDate) {
+        setTimeAgo(formatDistanceToNow(new Date(item.pubDate), { addSuffix: true, locale: ko }));
+      }
+    } catch (e) {
+      setTimeAgo(item.pubDate);
     }
-  } catch (e) {
-    timeAgo = item.pubDate;
-  }
+  }, [item.pubDate]);
 
   const cleanSnippet = item.contentSnippet?.replace(/<[^>]*>?/gm, '') || '';
 

@@ -26,11 +26,29 @@ const SMMA_PERIODS = [7, 15, 25, 50, 100, 200, 400];
 const SMMA_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
 const LivePrice = ({ basePrice, symbol, className, minWidth = '90px' }: { basePrice: number, symbol: string, className?: string, minWidth?: string }) => {
+  const [mounted, setMounted] = useState(false);
   const [localTick, setLocalTick] = useState(0);
+
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => setLocalTick(t => t + 1), 100);
     return () => clearInterval(timer);
   }, []);
+
+  if (!mounted) {
+    return (
+      <span className={className} style={{ 
+        fontVariantNumeric: 'tabular-nums', 
+        display: 'inline-block', 
+        minWidth: minWidth,
+        textAlign: 'right',
+        fontFamily: 'var(--font-mono), monospace',
+        flexShrink: 0
+      }}>
+        ${basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    );
+  }
 
   const seconds = new Date().getSeconds();
   const ms = new Date().getMilliseconds();
