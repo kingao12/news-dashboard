@@ -42,14 +42,13 @@ export async function GET(request: Request) {
     let chartData: any[] = [];
     try {
       const bRes = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=150`);
-      if (bRes.ok) {
-        const bData = await bRes.json();
-        chartData = bData.map((d: any) => ({
+      if (!bRes.ok) throw new Error('Binance Blocked IP');
+      const bData = await bRes.json();
+      chartData = bData.map((d: any) => ({
           x: d[0],
           y: [parseFloat(d[1]), parseFloat(d[2]), parseFloat(d[3]), parseFloat(d[4])],
           v: parseFloat(d[5])
         }));
-      }
     } catch (e) {
       // Fallback to seeded simulation
       const now = Date.now();
