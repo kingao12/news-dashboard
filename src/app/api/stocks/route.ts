@@ -76,6 +76,15 @@ export async function GET(request: Request) {
           v: Math.floor(walkRandom() * 5000) + 2000
         });
       }
+
+      // 실시간 마이크로 변동 추가 (1분 봉일 때만 적용)
+      if (interval === '1m') {
+        const microSeed = Math.floor(now / 5000);
+        const microWalk = getSeededRandom(symbolSeed + microSeed + 500);
+        const jitter = (microWalk() - 0.5) * 0.001 * price;
+        series[series.length - 1].y[3] = parseFloat((series[series.length - 1].y[3] + jitter).toFixed(2));
+      }
+
       return series;
     };
 

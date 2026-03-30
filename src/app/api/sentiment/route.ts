@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 let sentimentCache: { data: any; ts: number } | null = null;
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 3000; // 캐시 시간을 3초로 줄여 실시간 반응성 개선
 
 const getSentimentLabel = (v: number) => {
   if (v <= 20) return { label: '극단적 공포', en: 'Extreme Fear', color: '#ef4444' };
@@ -34,13 +34,17 @@ export async function GET() {
       }
     } catch {}
 
-    // 2. Simulate Stock Market indexes (CNN-style algorithm)
-    const base = 58; const h = new Date().getHours();
-    const stockVal = Math.min(95, Math.max(5, base + Math.sin(h * 0.4) * 12 + (Math.random() - 0.5) * 4));
-    const koreaVal = Math.min(95, Math.max(5, stockVal - 5 + (Math.random() - 0.5) * 8));
-    const japanVal = Math.min(95, Math.max(5, stockVal + 3 + (Math.random() - 0.5) * 6));
-    const euroVal  = Math.min(95, Math.max(5, stockVal - 2 + (Math.random() - 0.5) * 7));
-    const chinaVal = Math.min(95, Math.max(5, stockVal - 10 + (Math.random() - 0.5) * 10));
+    // 2. Simulate Stock Market indexes (Sine-wave logic based on time)
+    const t = now / 1000;
+    const base = 58; 
+    const wave = Math.sin(t * 0.1) * 3; // 10초 주기로 ±3p 파동
+    const jitter = (Math.sin(t * 0.7) * 0.5); // 1.4초 주기로 미세 지터
+    
+    const stockVal = Math.min(95, Math.max(5, base + wave + jitter));
+    const koreaVal = Math.min(95, Math.max(5, stockVal - 4 + Math.sin(t * 0.15) * 2));
+    const japanVal = Math.min(95, Math.max(5, stockVal + 2 + Math.sin(t * 0.08) * 3));
+    const euroVal  = Math.min(95, Math.max(5, stockVal - 1 + Math.sin(t * 0.12) * 2));
+    const chinaVal = Math.min(95, Math.max(5, stockVal - 8 + Math.sin(t * 0.05) * 4));
 
     // 3. Simulated Volatility Index (VIX-style)
     const vix = Math.max(12, Math.min(45, 18 + (100 - stockVal) * 0.25 + (Math.random() - 0.5) * 3));

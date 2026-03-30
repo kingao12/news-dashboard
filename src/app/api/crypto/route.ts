@@ -50,18 +50,29 @@ export async function GET(request: Request) {
           v: parseFloat(d[5])
         }));
     } catch (e) {
-      // Fallback to seeded simulation
+      // Fallback to dynamic time-seeded simulation
       const now = Date.now();
-      const roundedNow = Math.floor(now / 5000) * 5000;
-      const seed = targetCoin.symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + Math.floor(now / 86400000);
-      const walk = getSeededRandom(seed);
+      const roundedNow = Math.floor(now / 1000) * 1000;
+      const daySeed = Math.floor(now / 86400000);
+      const symbolSeed = targetCoin.symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      
+      // 기조(Trend)는 일 단위 시드로 고정하여 차트가 너무 튀지 않게 함
+      const trendWalk = getSeededRandom(symbolSeed + daySeed);
       let price = targetCoin.basePrice;
+      
       for (let i = 150; i >= 0; i--) {
         const time = roundedNow - (i * 60000);
         const open = price;
-        price += price * 0.001 * (walk() - 0.49);
-        chartData.push({ x: time, y: [open, open * 1.001, open * 0.999, price], v: 1000 + walk() * 500 });
+        price += price * 0.001 * (trendWalk() - 0.49);
+        chartData.push({ x: time, y: [open, open * 1.001, open * 0.999, price], v: 1000 + trendWalk() * 500 });
       }
+
+      // ──────────────────────────────────────────────────────────────
+      // 실시간 '꿈틀거림(Micro-movements)' 추가: 5초마다 변함
+      const microSeed = Math.floor(now / 5000);
+      const microWalk = getSeededRandom(symbolSeed + microSeed);
+      const jitter = (microWalk() - 0.5) * 0.002 * price; // ±0.1% 실시간 변동
+      chartData[chartData.length - 1].y[3] += jitter;
     }
 
     const currentPrice = chartData[chartData.length - 1].y[3];

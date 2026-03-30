@@ -48,7 +48,7 @@ const GROWTH_RATES = {
 
 const GLOBAL_EPOCH = new Date('2026-01-01T00:00:00Z').getTime();
 let macroCache: { data: any, timestamp: number } | null = null;
-const CACHE_TTL = 5000; // 5 seconds
+const CACHE_TTL = 2000; // 실시간성을 위해 2초로 단축
 
 export async function GET() {
   const now = Date.now();
@@ -92,21 +92,27 @@ export async function GET() {
     };
 
     const noise = () => (Math.random() - 0.5) * 0.01;
-
-    const currentStocks = BASE_DATA.stocks.map(s => ({
-      ...s,
-      value: parseFloat((s.value + (s.value * noise() * 0.05)).toFixed(2)),
-    }));
-
-    const currentExchange = BASE_DATA.exchangeRates.map(e => ({
-      ...e,
-      rate: parseFloat((e.rate + (e.rate * noise() * 0.005)).toFixed(2)),
-    }));
-
-    const currentCommodities = BASE_DATA.commodities.map(c => ({
-      ...c,
-      value: parseFloat((c.value + (c.value * noise() * 0.01)).toFixed(2)),
-    }));
+    
+    // ──────────────────────────────────────────────────────────────
+    // 실시간 '꿈틀거림' 공식: (기본값) * (1 + sin(초 * 계수) * 변동폭)
+    const t = now / 1000; // 현재 초 단위
+    
+    const currentStocks = BASE_DATA.stocks.map((s, i) => {
+      const wave = Math.sin(t * 0.5 + i) * 0.002;
+      return { ...s, value: parseFloat((s.value * (1 + wave)).toFixed(2)) };
+    });
+    
+    const currentExchange = BASE_DATA.exchangeRates.map((e, i) => {
+      // 5초 주기로 미세하게 위아래로 움직임
+      const wave = Math.sin(t * 0.8 + i) * 0.0015; 
+      const rate = e.rate * (1 + wave);
+      return { ...e, rate: parseFloat(rate.toFixed(2)) };
+    });
+    
+    const currentCommodities = BASE_DATA.commodities.map((c, i) => {
+      const wave = Math.sin(t * 0.3 + i) * 0.003;
+      return { ...c, value: parseFloat((c.value * (1 + wave)).toFixed(2)) };
+    });
 
     const finalData = {
       gdp: currentGDP,

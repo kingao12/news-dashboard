@@ -78,25 +78,25 @@ const getFeedUrls = (country: string, topic: string): FeedTarget[] => {
   // ── 국가 로직 고도화: 언론사 직접 피드를 대거 추가하여 구글뉴스 의존도 낮추고 실시간성 향상 ──
   // ── 국내 (KR) ───────────────────────────────────────────────────────────────
   if (country === 'KR') {
-    if (topic === 'AI') {
-      urls.push({ url: gSearch('인공지능 AI 기술', 'hl=ko&gl=KR&ceid=KR:ko'), sourceName: 'AI 뉴스' });
+    if (topic === 'AI' || topic === 'TECHNOLOGY') {
+      urls.push({ url: 'https://www.aitimes.com/rss/all.xml', sourceName: 'AI타임즈' });
+      urls.push({ url: 'https://www.zdnet.co.kr/rss/all.xml', sourceName: 'ZDNet Korea' });
+      urls.push({ url: 'https://rss.donga.com/it.xml', sourceName: '동아일보 IT' });
+      urls.push({ url: gSearch('인공지능 AI 딥러닝 기술', 'hl=ko&gl=KR&ceid=KR:ko'), sourceName: 'AI 뉴스' });
+    } else if (topic === 'POLITICS') {
+      urls.push({ url: 'https://v.daum.net/rss/news/politics', sourceName: '다음 정치' });
+      urls.push({ url: 'https://www.yonhapnews.co.kr/rss/politics.xml', sourceName: '연합뉴스 정치' });
+    } else if (topic === 'BUSINESS') {
+      urls.push({ url: 'https://www.mk.co.kr/rss/30100041/', sourceName: '매경 경제' });
+      urls.push({ url: 'https://rss.hankyung.com/economy.xml', sourceName: '한경 경제' });
     } else {
       urls.push({ url: gNews('hl=ko&gl=KR&ceid=KR:ko', topic === 'ALL' ? undefined : topic), sourceName: 'Google News KR' });
-      // 네이버/다음 실시간 뉴스를 타겟팅하여 추가 속보 확보
       urls.push({ url: gSearch(`site:naver.com OR site:daum.net ${topic === 'ALL' ? '속보' : topic}`, 'hl=ko&gl=KR&ceid=KR:ko'), sourceName: 'Naver/Daum News' });
     }
-    if (topic === 'BUSINESS' || isAll) {
-      urls.push({ url: 'https://www.mk.co.kr/rss/30000001/', sourceName: '매일경제' });
-      urls.push({ url: 'https://rss.hankyung.com/economy.xml', sourceName: '한국경제' });
-      urls.push({ url: 'https://biz.sbs.co.kr/rss/economic.xml', sourceName: 'SBS Biz' });
-    }
-    if (topic === 'POLITICS' || isAll) {
-      urls.push({ url: 'https://www.yonhapnews.co.kr/rss/politics.xml', sourceName: '연합뉴스 정치' });
-      urls.push({ url: 'https://rss.donga.com/politics.xml', sourceName: '동아일보 정치' });
-    }
+    
     if (isAll) {
-      urls.push({ url: 'https://rss.donga.com/total.xml', sourceName: '동아일보' });
-      urls.push({ url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01&plink=RSSREADER', sourceName: 'SBS 뉴스' });
+      urls.push({ url: 'https://www.yonhapnewstv.co.kr/browse/feed/', sourceName: '연합뉴스TV' });
+      urls.push({ url: 'https://v.daum.net/rss/news/all', sourceName: '다음 속보' });
       urls.push({ url: 'https://rss.kbs.co.kr/v1/newsrv/latest/news.rss', sourceName: 'KBS 뉴스' });
     }
     return urls;
@@ -155,11 +155,11 @@ const getFeedUrls = (country: string, topic: string): FeedTarget[] => {
 
   // ── 코인 (CRYPTO) ───────────────────────────────────────────────────────────
   if (country === 'CRYPTO') {
+    urls.push({ url: 'https://kr.coinness.com/news/rss', sourceName: '코인니스' });
     urls.push({ url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', sourceName: 'CoinDesk', lang: 'en' });
     urls.push({ url: 'https://cointelegraph.com/rss', sourceName: 'Cointelegraph', lang: 'en' });
     urls.push({ url: 'https://decrypt.co/feed', sourceName: 'Decrypt', lang: 'en' });
-    urls.push({ url: 'https://www.newsbtc.com/feed/', sourceName: 'NewsBTC', lang: 'en' });
-    urls.push({ url: gSearch('Bitcoin Ethereum crypto', 'hl=en-US&gl=US&ceid=US:en'), sourceName: 'Google Crypto', lang: 'en' });
+    urls.push({ url: gSearch('Bitcoin Ethereum crypto XRP Solana', 'hl=en-US&gl=US&ceid=US:en'), sourceName: 'Global Crypto', lang: 'en' });
     return urls;
   }
 

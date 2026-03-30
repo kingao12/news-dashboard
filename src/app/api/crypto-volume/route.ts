@@ -56,17 +56,23 @@ export async function GET() {
     });
   } catch (error) {
     console.error('CryptoVolume API Error Blocked, Using Simulator');
-    const mockCoins = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX'].map(s => {
-      const price = s === 'BTC' ? 68714 : s === 'ETH' ? 3852 : s === 'BNB' ? 614 : s === 'SOL' ? 146 : s === 'XRP' ? 0.62 : s === 'DOGE' ? 0.16 : 0.45;
+    const t = Date.now() / 1000;
+    
+    const mockCoins = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX'].map((s, i) => {
+      const priceBase = s === 'BTC' ? 68714 : s === 'ETH' ? 3852 : s === 'BNB' ? 614 : s === 'SOL' ? 146 : s === 'XRP' ? 0.62 : s === 'DOGE' ? 0.16 : 0.45;
+      // 시간 기반 파동 추가 (가격과 거래량이 미세하게 진동)
+      const wave = Math.sin(t * 0.5 + i) * 0.005; 
+      const price = priceBase * (1 + wave);
+      
       return {
         symbol: s,
-        price: price * (1 + (Math.random() - 0.5) * 0.05),
-        changePercent: (Math.random() - 0.4) * 8,
-        spotVolume: Math.random() * 1e4,
-        spotQuoteVolume: price * 1e7 * Math.random(),
-        futuresVolume: Math.random() * 1e5,
-        futuresQuoteVolume: price * 1e8 * Math.random(),
-        high: price * 1.05, low: price * 0.95, openInterest: Math.random() * 1e8
+        price: price,
+        changePercent: (Math.sin(t * 0.1 + i) * 5) + 2,
+        spotVolume: 5000 + Math.sin(t * 0.8 + i) * 2000,
+        spotQuoteVolume: price * 1e7 * (0.8 + Math.sin(t * 0.4 + i) * 0.2),
+        futuresVolume: 50000 + Math.sin(t * 0.9 + i) * 10000,
+        futuresQuoteVolume: price * 1e8 * (0.9 + Math.sin(t * 0.3 + i) * 0.1),
+        high: price * 1.05, low: price * 0.95, openInterest: 1e8 * (1 + wave)
       };
     });
     
