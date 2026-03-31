@@ -47,13 +47,13 @@ const GROWTH_RATES = {
 
 const GLOBAL_EPOCH = new Date('2026-01-01T00:00:00Z').getTime();
 let macroCache: { data: any, timestamp: number } | null = null;
-const CACHE_TTL = 3000; // 캐시 3초
+const CACHE_TTL = 1000; // 캐시 1초로 단폭 (실시간성 강화)
 
 async function fetchLivePrice(symbol: string, fallback: number) {
   try {
     const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1m&range=1d`, { 
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(3000)
+      cache: 'no-store', // 무조건 최신 데이터 강제
+      signal: AbortSignal.timeout(2000)
     });
     if (!res.ok) return fallback;
     const data = await res.json();
@@ -106,17 +106,28 @@ export async function GET() {
 
     // ──────────────────────────────────────────────────────────────
     // 1. 실시간 가격 시도 (Yahoo Finance)
-    const [liveUsdKrw, liveGold, liveWti, liveSpx, liveKospi] = await Promise.all([
+    const [liveUsdKrw, liveGold, liveWti, liveSpx, liveKospi, liveDxy, liveUs10y, liveBtc, liveEth] = await Promise.all([
       fetchLivePrice('USDKRW=X', 1512.45),
       fetchLivePrice('GC=F', 4442.2),
       fetchLivePrice('CL=F', 102.85),
       fetchLivePrice('^GSPC', 6368.85),
-      fetchLivePrice('^KS11', 5264.32)
+      fetchLivePrice('^KS11', 5264.32),
+      fetchLivePrice('DX-Y.NYB', 104.5),
+      fetchLivePrice('^TNX', 4.25),
+      fetchLivePrice('BTC-USD', 95000),
+      fetchLivePrice('ETH-USD', 2800)
     ]);
 
     // 2. 실시간 '꿈틀거림' 공식 결합
     const t = now / 1000; 
     
+    // 한국 10년물 금리 (모사 데이터: 미국 대비 일정한 스프레드 유지)
+    const liveKr10y = 3.35 + Math.sin(t * 0.1) * 0.02;
+    const yieldSpread = liveUs10y - liveKr10y;
+    
+    // 지터(Jitter) 추가: 수치가 고정되어 있지 않도록 미세 변동 적용
+    const jitter = (v: number) => v + (Math.random() - 0.5) * 0.001;
+
     const currentStocks = [
       { name: 'S&P 500', value: liveSpx, change: 1.2 },
       { name: 'KOSPI', value: liveKospi, change: 0.8 },
@@ -147,6 +158,26 @@ export async function GET() {
       stocks: currentStocks,
       exchangeRates: currentExchange,
       commodities: currentCommodities,
+      macro: {
+        dxy: { value: jitter(liveDxy), change: 0.15 },
+        us10y: { value: jitter(liveUs10y), change: 0.02 },
+        kr10y: { value: jitter(liveKr10y), change: -0.01 },
+        yieldSpread: { value: jitter(yieldSpread), change: 0.03 },
+        btc: { value: liveBtc + (Math.random() - 0.5) * 2, change: 2.5 },
+        eth: { value: liveEth + (Math.random() - 0.5) * 0.5, change: 1.8 },
+        dominance: {
+          btc: parseFloat((58.42 + Math.sin(t * 0.1) * 0.05).toFixed(2)),
+          eth: parseFloat((17.21 + Math.sin(t * 0.15) * 0.03).toFixed(2)),
+          usdt: parseFloat((5.24 + Math.sin(t * 0.08) * 0.02).toFixed(2)),
+          usdc: parseFloat((1.85 + Math.sin(t * 0.05) * 0.01).toFixed(2))
+        },
+        yieldCurve: [
+          { period: '1M', yield: 5.3 },
+          { period: '2Y', yield: 4.6 },
+          { period: '10Y', yield: liveUs10y },
+          { period: '30Y', yield: 4.4 }
+        ]
+      },
       timestamp: Date.now()
     };
 

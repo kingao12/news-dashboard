@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
 import styles from './Widget.module.css';
@@ -26,7 +27,48 @@ const IMPACT_LABELS = {
   Low: '저'
 };
 
+const NowTimelineMarker = () => (
+  <motion.div 
+    initial={{ opacity: 0, scaleX: 0 }}
+    animate={{ opacity: 1, scaleX: 1 }}
+    style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '0.8rem', 
+      margin: '0.25rem 0',
+      position: 'relative',
+      padding: '0.5rem 0',
+      zIndex: 10
+    }}
+  >
+    <div style={{ flex: 1, height: '2px', background: 'var(--accent-gradient)', borderRadius: '2px', boxShadow: '0 0 10px var(--accent-glow)' }} />
+    <div style={{ 
+      fontSize: '0.6rem', 
+      fontWeight: 1000, 
+      color: 'white', 
+      background: 'var(--accent-primary)', 
+      padding: '0.2rem 0.6rem', 
+      borderRadius: '20px',
+      boxShadow: '0 0 12px var(--accent-glow)',
+      whiteSpace: 'nowrap',
+      letterSpacing: '0.05em'
+    }}>
+      NOW
+    </div>
+    <div style={{ flex: 1, height: '2px', background: 'var(--accent-gradient)', borderRadius: '2px', boxShadow: '0 0 10px var(--accent-glow)' }} />
+  </motion.div>
+);
+
 export default function EconomicCalendar() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000); // 30초마다 갱신
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
   const handleViewAll = () => {
     window.open('https://kr.investing.com/economic-calendar/', '_blank');
   };
@@ -37,74 +79,115 @@ export default function EconomicCalendar() {
       animate={{ opacity: 1, scale: 1 }}
       className={styles.widgetPanel}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.2rem' }}>
-        <Calendar size={18} style={{ color: 'var(--accent-primary)' }} />
-        <h3 className={styles.widgetHeader} style={{ margin: 0 }}>경제 캘린더 (오늘)</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <Calendar size={18} style={{ color: 'var(--accent-primary)' }} />
+          <h3 className={styles.widgetHeader} style={{ margin: 0 }}>경제 캘린더 (오늘)</h3>
+        </div>
+        <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent-primary)', background: 'rgba(99, 102, 241, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+          KST {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-        {MOCK_EVENTS.map((event) => (
-          <motion.div 
-            key={event.id}
-            whileHover={{ x: 5 }}
-            style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '0.6rem', 
-              padding: '1rem', 
-              background: 'var(--bg-glass)', 
-              borderRadius: '12px',
-              border: '1px solid var(--border-glass)',
-              cursor: 'pointer'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ 
-                  fontFamily: 'var(--font-mono)', 
-                  fontWeight: 800, 
-                  fontSize: '0.85rem',
-                  color: 'var(--text-primary)'
-                }}>
-                  {event.time}
-                </span>
-                <span style={{ 
-                  fontSize: '0.7rem', 
-                  fontWeight: 900, 
-                  color: '#94a3b8',
-                  background: 'rgba(255,255,255,0.05)',
-                  padding: '0.1rem 0.4rem',
-                  borderRadius: '4px'
-                }}>
-                  {event.country}
-                </span>
-              </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.3rem',
-                fontSize: '0.6rem',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                color: event.impact === 'High' ? '#ef4444' : event.impact === 'Medium' ? '#f59e0b' : '#22c55e'
-              }}>
-                <AlertTriangle size={10} />
-                {IMPACT_LABELS[event.impact]}
-              </div>
-            </div>
-            
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-              {event.event}
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+        {/* 첫 이벤트 전 '지금' 표시 */}
+        {currentTimeInMinutes < (parseInt(MOCK_EVENTS[0].time.split(':')[0]) * 60 + parseInt(MOCK_EVENTS[0].time.split(':')[1])) && (
+          <NowTimelineMarker />
+        )}
 
-            {(event.forecast || event.previous) && (
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                {event.forecast && <span>예측: <b style={{ color: 'var(--text-primary)' }}>{event.forecast}</b></span>}
-                {event.previous && <span>이전: <b style={{ color: 'var(--text-primary)' }}>{event.previous}</b></span>}
-              </div>
-            )}
-          </motion.div>
-        ))}
+        {MOCK_EVENTS.map((event, index) => {
+          const [h, m] = event.time.split(':').map(Number);
+          const eventTimeInMinutes = h * 60 + m;
+          const isPast = eventTimeInMinutes < currentTimeInMinutes - 15; 
+          const isActive = Math.abs(eventTimeInMinutes - currentTimeInMinutes) <= 45; 
+          
+          const nextEvent = MOCK_EVENTS[index + 1];
+          const nextEventTime = nextEvent ? (parseInt(nextEvent.time.split(':')[0]) * 60 + parseInt(nextEvent.time.split(':')[1])) : 1440;
+          const showNowLineAfter = currentTimeInMinutes >= eventTimeInMinutes && currentTimeInMinutes < nextEventTime;
+
+          return (
+            <React.Fragment key={event.id}>
+              <motion.div 
+                whileHover={{ x: 5 }}
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '0.6rem', 
+                  padding: '1.25rem 1rem', 
+                  background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-glass)', 
+                  borderRadius: '12px',
+                  border: isActive ? '2px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                  cursor: 'pointer',
+                  opacity: isPast ? 0.35 : 1,
+                  boxShadow: isActive ? '0 0 25px rgba(99, 102, 241, 0.2)' : 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                {isActive && (
+                  <div style={{ position: 'absolute', top: '0.5rem', right: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span className="live-dot" style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block' }} />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 950, color: '#ef4444', letterSpacing: '0.02em' }}>LIVE</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.618rem' }}>
+                    <span style={{ 
+                      fontFamily: 'var(--font-mono)', 
+                      fontWeight: 950, 
+                      fontSize: '0.95rem',
+                      color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)',
+                      letterSpacing: '-0.02em'
+                    }}>
+                      {event.time}
+                    </span>
+                    <span style={{ 
+                      fontSize: '0.6rem', 
+                      fontWeight: 950, 
+                      color: '#64748b',
+                      background: 'rgba(255,255,255,0.03)',
+                      padding: '0.15rem 0.42rem',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      textTransform: 'uppercase'
+                    }}>
+                      {event.country}
+                    </span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.3rem',
+                    fontSize: '0.6rem',
+                    fontWeight: 950,
+                    textTransform: 'uppercase',
+                    color: event.impact === 'High' ? '#ef4444' : event.impact === 'Medium' ? '#f59e0b' : '#22c55e'
+                  }}>
+                    <AlertTriangle size={10} />
+                    {IMPACT_LABELS[event.impact]}
+                  </div>
+                </div>
+                
+                <div style={{ fontWeight: 850, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.015em', lineHeight: 1.3 }}>
+                  {event.event}
+                </div>
+
+                {(event.forecast || event.previous) && (
+                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {event.forecast && <span>예측 <b style={{ color: 'var(--text-primary)', fontWeight: 1000, marginLeft: '0.2rem' }}>{event.forecast}</b></span>}
+                    {event.previous && <span>이전 <b style={{ color: 'var(--text-primary)', fontWeight: 1000, marginLeft: '0.2rem' }}>{event.previous}</b></span>}
+                  </div>
+                )}
+              </motion.div>
+
+              {showNowLineAfter && (
+                <NowTimelineMarker />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       <button 
@@ -113,17 +196,17 @@ export default function EconomicCalendar() {
           marginTop: '1.2rem', 
           width: '100%', 
           padding: '0.8rem', 
-          background: 'transparent', 
+          background: 'rgba(255,255,255,0.02)', 
           border: '1px solid var(--border-glass)',
           borderRadius: '12px',
           color: 'var(--text-secondary)',
           fontSize: '0.8rem',
-          fontWeight: 700,
+          fontWeight: 800,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '0.4rem',
-          transition: 'all 0.2s ease',
+          gap: '0.42rem',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer'
         }} className="hover-lift">
         전체 일정 보기 <ChevronRight size={14} />

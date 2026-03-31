@@ -8,6 +8,7 @@ import NewsSkeleton from './components/NewsSkeleton';
 import SentimentWidget from './components/SentimentWidget';
 import MarketWidget from './components/MarketWidget';
 import MacroWidget from './components/MacroWidget';
+import MacroDashBar from './components/MacroDashBar';
 import EconomicCalendar from './components/EconomicCalendar';
 import WhaleTradesWidget from './components/WhaleTradesWidget';
 import CryptoVolumeWidget from './components/CryptoVolumeWidget';
@@ -28,15 +29,15 @@ interface NewsItem {
 
 const ZONES = [
   { label: '서울 🇰🇷', zone: 'Asia/Seoul', offset: 9 },
-  { label: '뉴욕 🇺🇸', zone: 'America/New_York', offset: -5 },
-  { label: '런던 🇬🇧', zone: 'Europe/London', offset: 0 },
-  { label: '파리 🇫🇷', zone: 'Europe/Paris', offset: 1 },
+  { label: '베이징 🇨🇳', zone: 'Asia/Shanghai', offset: 8 },
+  { label: '두바이 🇦🇪', zone: 'Asia/Dubai', offset: 4 },
+  { label: '이란 🇮🇷', zone: 'Asia/Tehran', offset: 3.5 },
   { label: '모스크바 🇷🇺', zone: 'Europe/Moscow', offset: 3 },
   { label: '이스라엘 🇮🇱', zone: 'Asia/Jerusalem', offset: 2 },
-  { label: '이란 🇮🇷', zone: 'Asia/Tehran', offset: 3.5 },
-  { label: '두바이 🇦🇪', zone: 'Asia/Dubai', offset: 4 },
-  { label: '베이징 🇨🇳', zone: 'Asia/Shanghai', offset: 8 },
-].sort((a, b) => a.offset - b.offset);
+  { label: '파리 🇫🇷', zone: 'Europe/Paris', offset: 1 },
+  { label: '런던 🇬🇧', zone: 'Europe/London', offset: 0 },
+  { label: '뉴욕 🇺🇸', zone: 'America/New_York', offset: -5 },
+];
 
 const GlobalClockTicker = memo(() => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -101,13 +102,13 @@ const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
   
   return (
     <div className="ticker-wrap glass-panel" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, margin: '0 -2rem' }}>
-      <div style={{ display: 'flex', animation: 'ticker 40s linear infinite' }}>
+      <div style={{ display: 'flex', animation: 'ticker 30s linear infinite' }}>
         {[...news, ...news].map((item, i) => (
-          <div key={`${item.id}-${i}`} className="ticker-item">
+          <a key={`${item.id}-${i}`} href={item.link} target="_blank" rel="noopener noreferrer" className="ticker-item" style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
             <span style={{ color: 'var(--accent-primary)', marginRight: '8px' }}>•</span>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginRight: '6px' }}>[{item.source}]</span>
-            {item.title}
-          </div>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginRight: '6px' }}>[{item.source}]</span>
+            <span className="ticker-title-hover" style={{ transition: 'color 0.2s' }}>{item.title}</span>
+          </a>
         ))}
       </div>
     </div>
@@ -187,7 +188,7 @@ export default function Dashboard() {
     fetchNews(country, topic, page);
     const interval = setInterval(() => {
       fetchNews(country, topic, page, true);
-    }, 60000); // 60초 폴링 (부하 절반 감소)
+    }, 15000); // 15초 폴링 (긴급 속보 실시간 즉각 배치 반영)
     return () => clearInterval(interval);
   }, [country, topic, page, fetchNews]);
 
@@ -212,8 +213,8 @@ export default function Dashboard() {
               <Zap size={10} fill="currentColor" />
               실시간 글로벌 터미널
             </motion.div>
-            <h1 className={styles.title}>글로벌 <span className="gradient-text">터미널</span></h1>
-            <p className={styles.subtitle}>실시간 금융 뉴스 및 거시경제 데이터 익스체인지</p>
+            <h1 className={styles.title}>글로벌 마켓 <span className="gradient-text">터미널</span></h1>
+            <p className={styles.subtitle}>실시간 거시경제·퀀트 및 크립토 데이터 스트림</p>
           </div>
 
           <div className={styles.clockIntegrateSection}>
@@ -251,6 +252,7 @@ export default function Dashboard() {
         style={{ marginTop: '1.5rem' }}
       >
         <div className={styles.newsSection}>
+          <MacroDashBar />
           <div style={{ position: 'sticky', top: '50px', zIndex: 90, background: 'var(--bg-primary)', paddingBottom: '1rem' }}>
             <FilterBar
               country={country}
@@ -276,7 +278,7 @@ export default function Dashboard() {
               layout
               className={viewMode === 'list' ? styles.newsGridList : styles.newsGrid}
             >
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="sync">
                 {news.map((item) => (
                   <NewsCard
                     key={item.id}

@@ -12,9 +12,10 @@
 }
 
 .headerLayout {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  justify-content: flex-start;
+  align-items: center;
   gap: 2rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
@@ -34,6 +35,8 @@
   gap: 0.5rem;
   min-width: 0;
   padding-bottom: 2px;
+  overflow: hidden;
+  margin-top: 1.2rem; /* 위쪽 다크모드 버튼 공간 확보를 위해 살짝 아래로 내림 */
 }
 
 .clockLabelTag {
@@ -48,21 +51,24 @@
 }
 
 .headerActions {
+  position: absolute;
+  top: -1.5rem; /* 버튼을 헤더 위쪽의 빈 여백으로 완전히 끌어올림 */
+  right: 0;
   display: flex;
   align-items: flex-start;
-  height: 100%;
+  z-index: 50;
 }
 
 .liveBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0.9rem;
+  gap: 0.618rem; /* Golden Ratio gap */
+  padding: 0.382rem 0.618rem; /* Golden Ratio padding */
   background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 9999px;
-  font-size: 0.7rem;
+  font-size: var(--text-sm); /* Using 0.618rem */
   font-weight: 800;
   letter-spacing: 0.08em;
   width: fit-content;
@@ -76,10 +82,11 @@
 .clockTicker {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem; /* 간격 대폭 축소 */
   overflow-x: auto;
   scrollbar-width: none;
   flex: 1;
+  padding-bottom: 0.5rem;
 }
 
 .clockTicker::-webkit-scrollbar {
@@ -95,14 +102,15 @@
 .clockItem {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-width: 120px;
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
+  gap: 0.2rem;
+  min-width: 110px;
+  max-width: 145px; /* 너비 성장을 억제하여 너무 넓게 퍼지지 않도록 조치 */
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   transition: all 0.3s ease;
-  flex-shrink: 0;
+  flex: 1;
   position: relative;
   overflow: hidden;
 }
@@ -166,9 +174,9 @@
 }
 
 .title {
-  font-size: 2.0rem;
+  font-size: 1.8rem; /* 적당하게 축소 */
   font-weight: 900;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.1;
 }
@@ -183,15 +191,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 1.1rem 0.6rem 0.7rem;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   color: var(--text-primary);
   border-radius: 9999px;
   cursor: pointer;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: var(--text-sm); /* Golden ratio font size */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--card-shadow);
   backdrop-filter: blur(12px);
@@ -236,16 +244,15 @@
 }
 
 .subtitle {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  color: var(--text-secondary); /* Usually 61.8% opacity */
+  font-size: 0.9rem; /* 적당하게 축소 */
   font-weight: 600;
-  opacity: 0.9;
 }
 
 .gridContainer {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(380px, 3fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
@@ -275,12 +282,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem;
+  gap: 0.618rem;
+  padding: 0.618rem 1rem;
   border: none;
   background: transparent;
-  color: #64748b;
-  font-size: 0.65rem;
+  color: var(--text-secondary); /* Golden Opacity */
+  font-size: var(--text-sm); /* Golden Scale */
   font-weight: 900;
   letter-spacing: 0.08em;
   border-radius: 9px;

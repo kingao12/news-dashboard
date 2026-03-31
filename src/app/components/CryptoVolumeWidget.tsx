@@ -105,8 +105,10 @@ export default function CryptoVolumeWidget() {
       style={{ 
         height: '450px', 
         minHeight: '450px',
+        maxHeight: '450px',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        contain: 'content'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>

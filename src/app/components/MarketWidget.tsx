@@ -2,12 +2,8 @@ import { useState, useEffect, useMemo, useRef, memo, useCallback } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
-import { TrendingUp, TrendingDown, Coins, LineChart, Activity, RefreshCcw, Settings, Eye, EyeOff } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { Coins, LineChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { calculateSMMA, calculateRSI, calculateVWMA } from '../utils/indicators';
-
-const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 const fetcher = async (url: string) => {
   const r = await fetch(url);
   if (!r.ok) throw new Error('API Error');
@@ -23,11 +19,83 @@ const INTERVALS = [
   { label: '1시간', value: '1h' },
   { label: '4시간', value: '4h' },
   { label: '일봉', value: '1d' },
-  { label: '주봉', value: '1w' }
+  { label: '주봉', value: '1w' },
+  { label: '월봉', value: '1M' }
 ];
 
 const SMMA_PERIODS = [7, 15, 25, 50, 100, 200, 400];
 const SMMA_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
+
+
+declare global {
+  interface Window {
+    TradingView: any;
+  }
+}
+
+const TradingViewChart = memo(({ symbol, theme, interval, isCrypto }: { symbol: string, theme: string, interval: string, isCrypto: boolean }) => {
+  const container = useRef<HTMLDivElement>(null);
+  const chartId = useRef(`tv_chart_${Math.random().toString(36).substring(7)}`);
+
+  useEffect(() => {
+    const initWidget = () => {
+      if (!container.current || typeof window.TradingView === 'undefined') return;
+      
+      container.current.innerHTML = '';
+      const intervalMap: Record<string, string> = {
+        '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D', '1w': 'W', '1M': 'M'
+      };
+      const tvInterval = intervalMap[interval] || '1';
+      
+      const formattedSymbol = isCrypto ? `BINANCE:${symbol.toUpperCase()}USDT.P` : (symbol.includes(':') ? symbol : `NASDAQ:${symbol}`);
+
+      new window.TradingView.widget({
+        autosize: true,
+        symbol: formattedSymbol,
+        interval: tvInterval,
+        timezone: 'Asia/Seoul',
+        theme: theme === 'dark' ? 'dark' : 'light',
+        style: '1',
+        locale: 'kr',
+        toolbar_bg: theme === 'dark' ? '#131722' : '#f1f3f6',
+        enable_publishing: false,
+        hide_legend: false,
+        save_image: false,
+        container_id: chartId.current,
+        studies: ['RSI@tv-basicstudies'],
+        studies_overrides: { "relative strength index.rsi.length": 14 },
+        width: '100%',
+        height: '100%'
+      });
+    };
+
+    if (typeof window.TradingView === 'undefined') {
+      const existingScript = document.getElementById('tradingview-widget-script');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'tradingview-widget-script';
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.async = true;
+        script.onload = initWidget;
+        document.head.appendChild(script);
+      } else {
+        // 스크립트는 존재하지만 아직 로드 전일 수 있으므로 다시 체크
+        const checkTv = setInterval(() => {
+          if (typeof window.TradingView !== 'undefined') {
+            clearInterval(checkTv);
+            initWidget();
+          }
+        }, 100);
+        return () => clearInterval(checkTv);
+      }
+    } else {
+      initWidget();
+    }
+  }, [symbol, theme, interval, isCrypto]);
+
+  return <div id={chartId.current} ref={container} style={{ height: '850px', width: '100%' }} />;
+});
+TradingViewChart.displayName = 'TradingViewChart';
 
 const LivePrice = ({ basePrice, symbol, className, minWidth = '90px' }: { basePrice: number, symbol: string, className?: string, minWidth?: string }) => {
   const [price, setPrice] = useState(basePrice);
@@ -37,7 +105,8 @@ const LivePrice = ({ basePrice, symbol, className, minWidth = '90px' }: { basePr
   // 전역 윈도우 객체에 저장된 실시간 가격 구독
   useEffect(() => {
     const handlePriceUpdate = (e: any) => {
-      if (e.detail.symbol === symbol) {
+      // 대소문자 일치 여부를 위해 통일
+      if (typeof e.detail?.symbol === 'string' && e.detail.symbol.toUpperCase() === symbol.toUpperCase()) {
         const newPrice = e.detail.price;
         if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
         else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
@@ -112,18 +181,14 @@ AssetLogo.displayName = 'AssetLogo';
 export default function MarketWidget() {
   const [activeTab, setActiveTab] = useState<'crypto' | 'stocks'>('crypto');
   const [cryptoSymbol, setCryptoSymbol] = useState('BTC');
-  const [stockSymbol, setStockSymbol] = useState('S&P 500 Index');
+  const [stockSymbol, setStockSymbol] = useState('AAPL');
   const [interval, setIntervalVal] = useState('1m');
   const [cryptoRanking, setCryptoRanking] = useState<any[]>([]);
   const [stockRanking, setStockRanking] = useState<any[]>([]);
   
-  // Indicator Visibility
-  const [showRSI, setShowRSI] = useState(true);
-  const [showVWMA, setShowVWMA] = useState(true);
-  const [visibleSMMAs, setVisibleSMMAs] = useState<Set<number>>(new Set([7, 25, 100]));
   // Theme awareness for chart colors
   const [isDark, setIsDark] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
+  
   useEffect(() => {
     const check = () => setIsDark(document.documentElement.getAttribute('data-theme') !== 'light');
     check();
@@ -165,7 +230,8 @@ export default function MarketWidget() {
     };
 
     const connectWS = () => {
-      ws = new WebSocket('wss://stream.binance.com:9443/ws/!miniTicker@arr');
+      // 바이낸스 선물(Futures) 가격 스트림으로 연결 (트레이딩뷰 값과 일치)
+      ws = new WebSocket('wss://fstream.binance.com/ws/!miniTicker@arr');
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -208,14 +274,6 @@ export default function MarketWidget() {
     setActiveTab(tab);
   }, []);
 
-  const toggleSMMA = useCallback((p: number) => {
-    setVisibleSMMAs(prev => {
-      const next = new Set(prev);
-      if (next.has(p)) next.delete(p);
-      else next.add(p);
-      return next;
-    });
-  }, []);
 
   const handleRankingClick = useCallback((item: any) => {
     if (activeTab === 'crypto') {
@@ -225,120 +283,7 @@ export default function MarketWidget() {
     }
   }, [activeTab]);
 
-  const { ohlcSeries, indicatorSeries, rsiSeries } = useMemo(() => {
-    if (!data?.chart?.series || !Array.isArray(data.chart.series)) {
-      return { ohlcSeries: [], indicatorSeries: [], rsiSeries: [] };
-    }
-
-    const raw = data.chart.series;
-    const closes = raw.map((d: any) => d.y[3]);
-    const volumes = raw.map((d: any) => typeof d.v === 'number' ? d.v : 0);
-
-    // 마지막 60개만 표시
-    const displaySlice = raw.slice(-60);
-    const ohlc = displaySlice.map((d: any) => ({ x: d.x, y: Array.isArray(d.y) ? d.y : [0, 0, 0, 0] }));
-
-    // 마지막 캔들 라이브 동기화
-    if (ohlc.length > 0 && typeof data?.chart?.price === 'number' && interval === '1m') {
-      const live = data.chart.price;
-      const lastItem = { ...ohlc[ohlc.length - 1] };
-      const lastY = [...lastItem.y];
-      lastY[3] = live;
-      if (live > lastY[1]) lastY[1] = live;
-      if (live < lastY[2]) lastY[2] = live;
-      lastItem.y = lastY;
-      ohlc[ohlc.length - 1] = lastItem;
-    }
-
-    // O(n) 인덱스 맵: raw.indexOf(d) O(n²) 제거
-    const rawIndexMap = new Map<number, number>(raw.map((d: any, i: number) => [d.x, i]));
-    const getIdx = (d: any) => rawIndexMap.get(d.x) ?? -1;
-
-    const indicators: any[] = [];
-
-    if (showVWMA && raw.length > 100) {
-      const vwmals = calculateVWMA(closes, volumes, 100);
-      indicators.push({
-        name: 'VWMA 100', type: 'line',
-        data: displaySlice.map((d: any) => ({ x: d.x, y: vwmals[getIdx(d)] ?? null })),
-        color: '#f43f5e',
-      });
-    }
-
-    SMMA_PERIODS.forEach((p, idx) => {
-      if (visibleSMMAs.has(p) && raw.length > p) {
-        const smmals = calculateSMMA(closes, p);
-        indicators.push({
-          name: `SMMA ${p}`, type: 'line',
-          data: displaySlice.map((d: any) => ({ x: d.x, y: smmals[getIdx(d)] ?? null })),
-          color: SMMA_COLORS[idx],
-        });
-      }
-    });
-
-    const rsils = calculateRSI(closes, 14);
-    const rsi = displaySlice.map((d: any) => ({ x: d.x, y: rsils[getIdx(d)] ?? null }));
-
-    return { ohlcSeries: ohlc, indicatorSeries: indicators, rsiSeries: rsi };
-  }, [data, visibleSMMAs, showVWMA, interval]);
-
-
-  const mainChartOptions: any = useMemo(() => ({
-    chart: {
-      id: 'main-chart',
-      type: 'line', 
-      background: 'transparent',
-      toolbar: { show: false },
-      animations: { enabled: false }
-    },
-    stroke: { width: [0, ...Array(indicatorSeries.length).fill(2)] }, 
-    xaxis: { type: 'datetime', labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: {
-      labels: { 
-        style: { colors: isDark ? '#94a3b8' : '#475569' }, 
-        formatter: (v: number | null | undefined) => v != null ? `$${v.toLocaleString()}` : '' 
-      },
-      opposite: true
-    },
-    grid: { borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
-    legend: { labels: { colors: isDark ? '#f8fafc' : '#0f172a' } },
-    tooltip: { 
-      theme: isDark ? 'dark' : 'light', 
-      shared: true 
-    },
-    plotOptions: {
-      candlestick: {
-        colors: { upward: '#22c55e', downward: '#ef4444' },
-        wick: { useFillColor: true }
-      }
-    }
-  }), [indicatorSeries.length, isDark]);
-
-  const rsiChartOptions: any = useMemo(() => ({
-    chart: { id: 'rsi-chart', type: 'line', background: 'transparent', toolbar: { show: false }, sparkline: { enabled: false } },
-    stroke: { curve: 'smooth', width: 2 },
-    colors: ['#8b5cf6'],
-    xaxis: { type: 'datetime', labels: { show: false }, axisBorder: { show: false } },
-    yaxis: { 
-      min: 0, max: 100, tickAmount: 2, 
-      labels: { 
-        style: { colors: isDark ? '#94a3b8' : '#475569' }, 
-        formatter: (v: number | null | undefined) => v != null ? v.toFixed(0) : '' 
-      } 
-    },
-    grid: { show: false },
-    legend: { labels: { colors: isDark ? '#f8fafc' : '#0f172a' } },
-    annotations: {
-      yaxis: [
-        { y: 70, borderColor: '#ef4444', label: { text: '70', style: { color: '#ef4444', background: 'transparent' } } },
-        { y: 30, borderColor: '#22c55e', label: { text: '30', style: { color: '#22c55e', background: 'transparent' } } }
-      ]
-    },
-    tooltip: { 
-      theme: isDark ? 'dark' : 'light',
-      shared: false
-    }
-  }), [isDark]);
+  // TradingView 위젯으로 통합되어, 기존 ApexCharts 인디케이터 연산 코드 전체를 제거했습니다.
 
   return (
     <motion.div 
@@ -355,9 +300,7 @@ export default function MarketWidget() {
             <LineChart size={14} /> 주식
           </button>
         </div>
-        <button onClick={() => setShowSettings(!showSettings)} className={styles.settingsBtn}>
-          <Settings size={16} />
-        </button>
+        
       </div>
 
       <div className={styles.intervalBar}>
@@ -368,34 +311,14 @@ export default function MarketWidget() {
         ))}
       </div>
 
-      {showSettings && (
-        <div className={styles.settingsOverlay}>
-          <div className={styles.settingGroup}>
-            <span>지표 표시</span>
-            <div className={styles.toggleRow}>
-              <button onClick={() => setShowRSI(!showRSI)} className={showRSI ? styles.toggleOn : ''}>RSI</button>
-              <button onClick={() => setShowVWMA(!showVWMA)} className={showVWMA ? styles.toggleOn : ''}>VWMA</button>
-            </div>
-          </div>
-          <div className={styles.settingGroup}>
-            <span>이동평균선 (SMMA)</span>
-            <div className={styles.smmaRow}>
-              {SMMA_PERIODS.map(p => (
-                <button key={p} onClick={() => toggleSMMA(p)} className={visibleSMMAs.has(p) ? styles.toggleOn : ''}>{p}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className={styles.chartSection} style={{ minHeight: showRSI ? '550px' : '380px' }}>
+      <div className={styles.chartSection} style={{ height: '800px', display: 'flex', flexDirection: 'column' }}>
         {isLoading && !data ? (
           <div style={{ padding: '2rem' }}><WidgetSkeleton /></div>
         ) : error ? (
           <div className={styles.widgetError}>데이터를 불러올 수 없습니다.</div>
         ) : data?.chart ? (
           <>
-            <div className={styles.cryptoHeader}>
+            <div className={styles.cryptoHeader} style={{ marginBottom: '1rem' }}>
               <div className={styles.cryptoPrice}>
                 <AssetLogo src={data.chart.image} symbol={data.chart.symbol} size={28} />
                 <span className={styles.symbol} style={{ fontSize: '1rem', marginLeft: '0.6rem' }}>{data.chart.symbol} ({interval})</span>
@@ -409,20 +332,14 @@ export default function MarketWidget() {
               </div>
             </div>
             
-            {typeof window !== 'undefined' && (
-              <Chart 
-                options={mainChartOptions} 
-                series={[{ name: 'Price', type: 'candlestick', data: ohlcSeries }, ...indicatorSeries]} 
-                height={350} 
+            <div style={{ height: '850px', width: '100%', position: 'relative' }}>
+              <TradingViewChart 
+                symbol={activeTab === 'crypto' ? cryptoSymbol : stockSymbol} 
+                theme={isDark ? 'dark' : 'light'} 
+                interval={interval} 
+                isCrypto={activeTab === 'crypto'}
               />
-            )}
-            
-            {(showRSI && typeof window !== 'undefined') && (
-              <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: 800, marginBottom: '8px', letterSpacing: '0.05em' }}>상대강도지수 (RSI 14)</div>
-                <Chart options={rsiChartOptions} series={[{ name: 'RSI', data: rsiSeries }]} type="line" height={150} />
-              </div>
-            )}
+            </div>
           </>
         ) : (
           <div className={styles.widgetError}>데이터가 존재하지 않습니다.</div>

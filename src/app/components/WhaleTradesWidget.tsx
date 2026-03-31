@@ -35,17 +35,14 @@ const TradeRow = memo(({ t, formatValue }: { t: Trade; formatValue: (k: number, 
   );
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -12, height: 0 }}
-      animate={{ opacity: 1, x: 0, height: 'auto' }}
-      exit={{ opacity: 0, x: 12, height: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 35, mass: 0.7 }}
+    <>
+      <div
+        className="trade-row-anim"
       style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         background: 'rgba(255,255,255,0.02)', borderLeft: `3px solid ${color}`,
         padding: '0.75rem 1rem', borderRadius: '4px 12px 12px 4px',
-        boxShadow: `0 4px 15px ${glow}`, marginBottom: '2px',
+        boxShadow: `0 4px 15px ${glow}`, marginBottom: '0.4rem',
         backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.03)',
         overflow: 'hidden',
       }}
@@ -87,7 +84,8 @@ const TradeRow = memo(({ t, formatValue }: { t: Trade; formatValue: (k: number, 
           </span>
         </div>
       </div>
-    </motion.div>
+      </div>
+    </>
   );
 });
 
@@ -96,6 +94,7 @@ TradeRow.displayName = 'TradeRow';
 // ── 실시간 통계 미니 패널 ──────────────────────────────────────────────────
 const StatsMini = memo(({ trades }: { trades: Trade[] }) => {
   const stats = useMemo(() => {
+    if (trades.length === 0) return null;
     const buys = trades.filter(t => !t.isBuyerMaker);
     const sells = trades.filter(t => t.isBuyerMaker);
     const totalKRW = trades.reduce((s, t) => s + t.krwValue, 0);
@@ -111,31 +110,39 @@ const StatsMini = memo(({ trades }: { trades: Trade[] }) => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem' }}>
-      {/* 매수/매도 비율 바 */}
-      <div style={{ flex: 2, background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, marginBottom: '0.3rem', letterSpacing: '0.05em' }}>매수/매도 비율</div>
-        <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', background: 'rgba(239,68,68,0.3)' }}>
-          <motion.div
-            style={{ background: 'linear-gradient(90deg, #22c55e, #16a34a)', borderRadius: '3px 0 0 3px' }}
-            animate={{ width: `${stats.buyRatio}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
+    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem', height: '62px', alignItems: 'center' }}>
+      {!stats ? (
+        <div style={{ flex: 1, height: '100%', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '0.6rem', color: '#475569', fontWeight: 700 }}>실시간 데이터 수집 중...</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
-          <span style={{ fontSize: '0.62rem', color: '#22c55e', fontWeight: 800 }}>↑ {stats.buyCount}</span>
-          <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>{stats.buyRatio}%</span>
-          <span style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: 800 }}>{stats.sellCount} ↓</span>
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* 매수/매도 비율 바 */}
+          <div style={{ flex: 2, background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, marginBottom: '0.3rem', letterSpacing: '0.05em' }}>매수/매도 비율</div>
+            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', background: 'rgba(239,68,68,0.3)' }}>
+              <motion.div
+                style={{ background: 'linear-gradient(90deg, #22c55e, #16a34a)', borderRadius: '3px 0 0 3px' }}
+                animate={{ width: `${stats.buyRatio}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
+              <span style={{ fontSize: '0.62rem', color: '#22c55e', fontWeight: 800 }}>↑ {stats.buyCount}</span>
+              <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>{stats.buyRatio}%</span>
+              <span style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: 800 }}>{stats.sellCount} ↓</span>
+            </div>
+          </div>
 
-      {/* 누적 거래량 */}
-      <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, marginBottom: '0.2rem', letterSpacing: '0.05em' }}>누적 거래량</div>
-        <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#f59e0b', fontFamily: 'var(--font-mono)' }}>
-          {formatTotal(stats.totalKRW)}
-        </div>
-      </div>
+          {/* 누적 거래량 */}
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, marginBottom: '0.2rem', letterSpacing: '0.05em' }}>누적 거래량</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#f59e0b', fontFamily: 'var(--font-mono)' }}>
+              {formatTotal(stats.totalKRW)}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 });
@@ -197,7 +204,7 @@ export default function WhaleTradesWidget() {
         const seenIds = new Set(prev.map(t => t.id));
         const newOnes = incoming.filter(t => !seenIds.has(t.id));
         if (newOnes.length === 0) return prev;
-        return [...newOnes, ...prev].slice(0, 30);
+        return [...newOnes, ...prev].slice(0, 5);
       });
     }, 500);
     return () => clearInterval(interval);
@@ -338,34 +345,35 @@ export default function WhaleTradesWidget() {
         </div>
       </div>
 
-      {/* 실시간 통계 미니 패널 */}
-      {trades.length > 0 && <StatsMini trades={trades} />}
+      {/* 실시간 통계 미니 패널 (항상 렌더링하여 높이 고정) */}
+      <StatsMini trades={trades} />
 
       {/* 거래 목록 */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.2rem', scrollbarWidth: 'none' }}>
-        <AnimatePresence initial={false} mode="popLayout">
-          {filteredTrades.length === 0 ? (
-            <motion.div
-              key="waiting"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b' }}
-            >
-              <RefreshCcw size={24} className={styles.spin} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em' }}>
-                {wsStatus === 'connecting' ? '연결 중...' : '시그널 대기 중...'}
-              </div>
-              <div style={{ fontSize: '0.65rem', color: '#475569', marginTop: '0.4rem' }}>
-                임계값: {thresholdKRW.toLocaleString()}원 이상
-              </div>
-            </motion.div>
-          ) : (
-            filteredTrades.map(t => (
-              <TradeRow key={t.id} t={t} formatValue={formatValue} />
-            ))
-          )}
-        </AnimatePresence>
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '0.4rem', 
+        paddingRight: '0.2rem', 
+        scrollbarWidth: 'none',
+        contain: 'content' 
+      }}>
+        {filteredTrades.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b' }}>
+            <RefreshCcw size={24} className={styles.spin} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em' }}>
+              {wsStatus === 'connecting' ? '연결 중...' : '시그널 대기 중...'}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: '#475569', marginTop: '0.4rem' }}>
+              임계값: {thresholdKRW.toLocaleString()}원 이상
+            </div>
+          </div>
+        ) : (
+          filteredTrades.map(t => (
+            <TradeRow key={t.id} t={t} formatValue={formatValue} />
+          ))
+        )}
       </div>
     </motion.div>
   );
