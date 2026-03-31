@@ -143,18 +143,20 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Scrollbar styling - Terminal Style */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--bg-secondary);
 }
  
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05); 
+  background: var(--text-secondary);
+  opacity: 0.3;
   border-radius: 10px;
-  transition: background 0.3s ease;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -167,15 +169,15 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
-/* --- 실시간 데이터 시각화 보강 --- */
+/* --- 실시간 데이터 시각화 보강 (Centralized Animations) --- */
 @keyframes priceFlashUp {
-  0% { color: #22c55e; background-color: rgba(34, 197, 94, 0.15); }
-  100% { color: inherit; background-color: transparent; }
+  0% { color: #22c55e; background-color: rgba(34, 197, 94, 0.12); transform: scale(1.02); }
+  100% { color: inherit; background-color: transparent; transform: scale(1); }
 }
 
 @keyframes priceFlashDown {
-  0% { color: #ef4444; background-color: rgba(239, 68, 68, 0.15); }
-  100% { color: inherit; background-color: transparent; }
+  0% { color: #ef4444; background-color: rgba(239, 68, 68, 0.12); transform: scale(1.02); }
+  100% { color: inherit; background-color: transparent; transform: scale(1); }
 }
 
 .price-flash-up {

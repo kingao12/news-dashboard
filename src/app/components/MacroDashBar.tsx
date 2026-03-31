@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, Globe, Zap, ArrowRightLeft, Activity, Info } from 'lucide-react';
 import styles from './Widget.module.css';
+import WidgetSkeleton from './WidgetSkeleton';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -102,16 +103,25 @@ const DataBox = memo(({ label, value, subValue, change, icon: Icon, color = 'var
 DataBox.displayName = 'DataBox';
 
 export default function MacroDashBar() {
-  const { data, isLoading } = useSWR('/api/macro', fetcher, { refreshInterval: 1200 }); // 1.2초로 초고속화
+  const { data, isLoading } = useSWR('/api/macro', fetcher, { 
+    refreshInterval: 2000, // 1.2초에서 2초로 안정화 (HMR 에러 방지)
+    dedupingInterval: 1000
+  });
+
   const [spreadHistory, setSpreadHistory] = useState<number[]>([]);
 
   useEffect(() => {
-    if (data?.macro?.yieldSpread?.value) {
-      setSpreadHistory(prev => [...prev, data.macro.yieldSpread.value].slice(-20));
+    const nextVal = data?.macro?.yieldSpread?.value;
+    if (nextVal !== undefined) {
+      setSpreadHistory(prev => {
+        // 중복 데이터 추가 방지 및 최신 20개 유지
+        if (prev.length > 0 && prev[prev.length - 1] === nextVal) return prev;
+        return [...prev, nextVal].slice(-20);
+      });
     }
   }, [data]);
 
-  if (isLoading || !data?.macro) return null;
+  if (isLoading || !data?.macro) return <div style={{ height: '90px' }}><WidgetSkeleton /></div>;
 
   const m = data.macro;
 

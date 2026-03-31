@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
 import styles from './Widget.module.css';
+import WidgetSkeleton from './WidgetSkeleton';
 
 interface EconomicEvent {
   id: string;
@@ -60,12 +61,15 @@ const NowTimelineMarker = () => (
 );
 
 export default function EconomicCalendar() {
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 30000); // 30초마다 갱신
     return () => clearInterval(timer);
   }, []);
+
+  if (!now) return <div style={{ height: '400px' }}><WidgetSkeleton /></div>;
 
   const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 

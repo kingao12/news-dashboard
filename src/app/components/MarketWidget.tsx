@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, memo, useCallback } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
-import { Coins, LineChart } from 'lucide-react';
+import { Coins, LineChart, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 const fetcher = async (url: string) => {
   const r = await fetch(url);
@@ -92,9 +92,16 @@ const TradingViewChart = memo(({ symbol, theme, interval, isCrypto }: { symbol: 
     <div 
       className="tradingview-widget-container" 
       ref={container} 
-      style={{ height: '850px', width: '100%', background: '#000' }}
+      style={{ height: '850px', width: '100%', background: 'var(--bg-secondary)', borderRadius: '12px', position: 'relative', overflow: 'hidden' }}
     >
-      <div className="tradingview-widget-container__widget" style={{ height: '100%', width: '100%' }}></div>
+      {/* 로딩 스켈레톤: 실제 차트가 오버레이되면 가려짐 */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, rgba(99,102,241,0.05) 0%, transparent 70%)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', opacity: 0.5 }}>
+          <Activity size={32} className="live-indicator" style={{ color: 'var(--accent-primary)' }} />
+          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.1em' }}>INITIALIZING ENGINE...</span>
+        </div>
+      </div>
+      <div className="tradingview-widget-container__widget" style={{ height: '100%', width: '100%', position: 'relative', zIndex: 2 }}></div>
     </div>
   );
 });
