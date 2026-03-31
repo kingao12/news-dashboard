@@ -191,9 +191,18 @@ export const revalidate = 0;
 
 // ─── Thumbnail extraction ──────────────────────────────────────────────────────
 const extractThumb = (item: any): string | null => {
+  // 1. media:content
   if (item['media:content']?.['$']?.url) return item['media:content']['$'].url;
-  const m = (item.content || item.contentSnippet || item.description || '').match(/<img[^>]+src="([^">]+)"/i);
-  return m ? m[1] : null;
+  // 2. enclosure
+  if (item.enclosure?.url) return item.enclosure.url;
+  // 3. description or content <img> tag
+  const content = item.content || item.contentSnippet || item.description || '';
+  const m = content.match(/<img[^>]+src="([^">]+)"/i);
+  if (m) return m[1];
+  // 4. Google News specific pattern (encoded image in description)
+  const gm = content.match(/src="([^"]+googleusercontent[^"]+)"/i);
+  if (gm) return gm[1];
+  return null;
 };
 
 export async function GET(request: Request) {
@@ -207,14 +216,19 @@ export async function GET(request: Request) {
 
   // ── Cache hit ────────────────────────────────────────────────────────────────
   const cached = newsCache.get(cacheKey);
-  if (cached && now - cached.ts < CACHE_TTL) {
+  if (cached && now - cached.ts < (category === 'GLOBAL_ALL' ? 15000 : CACHE_TTL)) {
     return NextResponse.json({
       items: cached.items,
       total: cached.total,
       page,
       totalPages: cached.totalPages,
       cached: true
-    }, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
+    }, { 
+      headers: { 
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'X-Cache-Status': 'HIT'
+      } 
+    });
   }
 
   try {
@@ -271,10 +285,22 @@ export async function GET(request: Request) {
     // ── Translate foreign news ────────────────────────────────────────────────
     const isForeign = !['KR'].includes(category);
     if (isForeign && pageItems.length > 0) {
+      // 번역 결과 모듈 레벨 캐시 (동일 제목 중복 번역 방지)
+      const TRANSLATE_CACHE = (global as any).__translateCache ?? ((global as any).__translateCache = new Map<string, string>());
+
       pageItems = await Promise.all(pageItems.map(async item => {
         try {
-          const translated = await translate(item.title, { to: 'ko' });
-          return { ...item, title: translated.text, originalTitle: item.title };
+          if (TRANSLATE_CACHE.has(item.title)) {
+            return { ...item, title: TRANSLATE_CACHE.get(item.title)!, originalTitle: item.title };
+          }
+          const result = await translate(item.title, { to: 'ko' });
+          TRANSLATE_CACHE.set(item.title, result.text);
+          // 캐시 크기 제한 (최대 500개)
+          if (TRANSLATE_CACHE.size > 500) {
+            const firstKey = TRANSLATE_CACHE.keys().next().value;
+            TRANSLATE_CACHE.delete(firstKey);
+          }
+          return { ...item, title: result.text, originalTitle: item.title };
         } catch {
           return item;
         }

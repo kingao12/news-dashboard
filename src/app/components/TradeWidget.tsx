@@ -31,16 +31,16 @@ export default function TradeWidget() {
           <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>글로벌 무역 터미널</h3>
         </div>
         <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px', letterSpacing: '0.05em' }}>
-          UNIT: $BN (USD)
+          단위: $BN (USD)
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr 90px', gap: '1rem', padding: '0 0.5rem 0.5rem 0.5rem', fontSize: '0.6rem', color: '#64748b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-          <span>Region</span>
-          <span>Export 📤</span>
-          <span>Import 📥</span>
-          <span style={{ textAlign: 'right' }}>Balance</span>
+          <span>지역</span>
+          <span>수출 📤</span>
+          <span>수입 📥</span>
+          <span style={{ textAlign: 'right' }}>무역수지</span>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '350px', overflowY: 'auto', scrollbarWidth: 'none' }}>
@@ -67,7 +67,7 @@ export default function TradeWidget() {
                 <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr 90px', gap: '1rem', alignItems: 'center' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-primary)' }}>{c.name}</span>
-                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700 }}>{c.code} / GDP {c.tradeGDP}%</span>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700 }}>{c.code} / GDP 대비 {c.tradeGDP}%</span>
                   </div>
                   
                   <div>

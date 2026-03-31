@@ -27,7 +27,7 @@
 }
 
 .skeletonImage {
-  height: 180px;
+  height: 220px;
   width: 100%;
   border-radius: 0;
   border-bottom: 1px solid var(--border-glass);

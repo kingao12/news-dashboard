@@ -164,6 +164,45 @@
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 
+/* 뷰 토글 */
+.viewToggle {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.viewToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.75rem;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.viewToggleBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+}
+
+.viewToggleActive {
+  background: var(--accent-gradient) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
 .refreshBtn:hover:not(:disabled) {
   transform: translateY(-2px);
   filter: brightness(1.1);

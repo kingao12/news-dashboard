@@ -45,30 +45,25 @@ export default function NewsDrawer({ item, onClose }: NewsDrawerProps) {
             className={styles.drawer}
           >
             <div className={styles.drawerHeader}>
-              <button onClick={onClose} className={styles.closeBtn}>
-                <X size={20} />
-              </button>
-              <div className={styles.headerActions}>
-                <button className={styles.actionIcon} title="북마크"><Bookmark size={18} /></button>
-                <button className={styles.actionIcon} title="공유"><Share2 size={18} /></button>
+              <div className={styles.headerTop}>
+                <span className={styles.label}>상세 읽기</span>
+                <button className={styles.closeBtn} onClick={onClose} aria-label="닫기">
+                  <X size={20} />
+                </button>
+              </div>
+              <h2 className={styles.title}>{item.title}</h2>
+              <div className={styles.meta}>
+                <span className={styles.source}>{item.source}</span>
+                <span className={styles.date}>{new Date(item.pubDate).toLocaleString('ko-KR')}</span>
               </div>
             </div>
 
             <div className={styles.drawerContent}>
-              <div className={styles.sourceTag}>
-                <Globe size={12} /> {item.source}
-              </div>
-              
-              <h2 className={styles.title}>{item.title}</h2>
               
               <div className={styles.metaRow}>
-                <div className={styles.metaItem}>
-                  <Calendar size={14} />
-                  <span>{new Date(item.pubDate).toLocaleString('ko-KR')}</span>
-                </div>
                 {item.sentiment && (
                   <div className={`${styles.sentimentBadge} ${styles[item.sentiment]}`}>
-                    {item.sentiment.toUpperCase()}
+                    {item.sentiment === 'bullish' ? '상승세' : item.sentiment === 'bearish' ? '하락세' : '중립'}
                   </div>
                 )}
               </div>
@@ -101,8 +96,7 @@ export default function NewsDrawer({ item, onClose }: NewsDrawerProps) {
                 rel="noopener noreferrer" 
                 className={styles.fullArticleBtn}
               >
-                <span>원본 기사 전체 읽기</span>
-                <ExternalLink size={16} />
+                본문 전체 보기 (외부 링크) <ExternalLink size={16} />
               </a>
             </div>
           </motion.div>

@@ -166,11 +166,11 @@
 }
 
 .title {
-  font-size: 2.75rem;
+  font-size: 2.0rem;
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   margin: 0;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .headerRight {
@@ -237,9 +237,9 @@
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 1rem;
-  font-weight: 500;
-  opacity: 0.8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
 .gridContainer {
@@ -254,9 +254,10 @@
   flex-direction: column;
   gap: 1.25rem;
   position: sticky;
-  top: 100px;
+  top: 80px;
   height: calc(100vh - 120px);
-  min-width: 400px;
+  min-height: 850px; /* 기존 450px(간접적)에서 대폭 확장 */
+  min-width: 420px;
 }
 
 .widgetTabs {
@@ -318,8 +319,15 @@
 
 .newsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+}
+
+/* 리스트 뷰 모드 */
+.newsGridList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .pagination {
@@ -371,18 +379,38 @@
   transform: scale(1.1);
 }
 
-/* Intermediate Widescreen */
+/* Responsive */
 @media (max-width: 1440px) {
   .dashboard {
     padding: 1.5rem;
   }
 
   .title {
-    font-size: 2.5rem;
+    font-size: 1.7rem;
   }
 
   .gridContainer {
     gap: 1.5rem;
+  }
+
+  .newsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .widgetSection {
+    position: static;
+    height: auto;
+    min-height: 0;
+  }
+
+  .newsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

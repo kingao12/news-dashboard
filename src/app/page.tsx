@@ -117,7 +117,7 @@ const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
 BreakingNewsTicker.displayName = 'BreakingNewsTicker';
 
 export default function Dashboard() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState('dark'); // 기본값을 다크로 변경
   const [country, setCountry] = useState('KR');
   const [topic, setTopic] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -129,17 +129,51 @@ export default function Dashboard() {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [activeTab, setActiveTab] = useState<'market' | 'macro' | 'flow'>('market');
   const [mounted, setMounted] = useState(false);
+  const [latency, setLatency] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+
+  // 로컬 스토리지에서 상태 복구
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('terminal-theme') || 'dark';
+    const savedTab = localStorage.getItem('terminal-active-tab') as any;
+    const savedCountry = localStorage.getItem('terminal-country');
+    const savedTopic = localStorage.getItem('terminal-topic');
+
+    if (savedTheme) setTheme(savedTheme);
+    if (savedTab) setActiveTab(savedTab);
+    if (savedCountry) setCountry(savedCountry);
+    if (savedTopic) setTopic(savedTopic);
+  }, []);
+
+  // 상태 변경 시 로컬 스토리지 저장
+  useEffect(() => {
+    if (!mounted) return;
+    localStorage.setItem('terminal-theme', theme);
+    localStorage.setItem('terminal-active-tab', activeTab);
+    localStorage.setItem('terminal-country', country);
+    localStorage.setItem('terminal-topic', topic);
+    localStorage.setItem('terminal-view-mode', viewMode);
+  }, [theme, activeTab, country, topic, mounted, viewMode]);
 
   const fetchNews = useCallback(async (c: string, t: string, p: number, background = false) => {
     if (!background) setLoading(true);
     setIsRefreshing(true);
     setError('');
 
+    const startTime = Date.now();
     try {
       const res = await fetch(`/api/news?category=${c}&topic=${t}&page=${p}`);
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
-      setNews(data.items || []);
+      
+      setLatency(Date.now() - startTime);
+      // ID 배열로 경량 비교 (JSON.stringify 대비 훨씬 빠름)
+      const items: NewsItem[] = data.items || [];
+      setNews(prev => {
+        if (prev.length === items.length && prev.every((n, i) => n.id === items[i]?.id)) return prev;
+        return items;
+      });
       setTotalPages(data.totalPages || 1);
     } catch (err) {
       setError('뉴스를 불러오는 데 실패했습니다.');
@@ -153,17 +187,13 @@ export default function Dashboard() {
     fetchNews(country, topic, page);
     const interval = setInterval(() => {
       fetchNews(country, topic, page, true);
-    }, 30000); // 30 second real-time polling
+    }, 60000); // 60초 폴링 (부하 절반 감소)
     return () => clearInterval(interval);
   }, [country, topic, page, fetchNews]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handlePageChange = (p: number) => {
     setPage(p);
@@ -180,15 +210,15 @@ export default function Dashboard() {
               className={styles.liveBadge}
             >
               <Zap size={10} fill="currentColor" />
-              LIVE GLOBAL TERMINAL
+              실시간 글로벌 터미널
             </motion.div>
-            <h1 className={styles.title}>Global <span className="gradient-text">Terminal</span></h1>
+            <h1 className={styles.title}>글로벌 <span className="gradient-text">터미널</span></h1>
             <p className={styles.subtitle}>실시간 금융 뉴스 및 거시경제 데이터 익스체인지</p>
           </div>
 
           <div className={styles.clockIntegrateSection}>
             <div className={styles.clockLabelTag}>
-               <Clock size={10} /> WORLD TIME
+               <Clock size={10} /> 세계 시간
             </div>
             <GlobalClockTicker />
           </div>
@@ -229,27 +259,30 @@ export default function Dashboard() {
               setTopic={(t) => { setTopic(t); setPage(1); }}
               onRefresh={() => fetchNews(country, topic, page)}
               isRefreshing={isRefreshing}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
             />
           </div>
 
           {error && <div className={styles.errorBanner}>{error}</div>}
 
           {loading && !isRefreshing ? (
-            <div className={styles.newsGrid}>
+            <div className={viewMode === 'list' ? styles.newsGridList : styles.newsGrid}>
               {[...Array(6)].map((_, i) => <NewsSkeleton key={`skeleton-${i}`} />)}
             </div>
           ) : (
             <>
-            <motion.div 
+            <motion.div
               layout
-              className={styles.newsGrid}
+              className={viewMode === 'list' ? styles.newsGridList : styles.newsGrid}
             >
               <AnimatePresence mode="popLayout">
                 {news.map((item) => (
-                  <NewsCard 
-                    key={item.id} 
-                    item={item} 
-                    onClick={(item) => setSelectedNews(item)} 
+                  <NewsCard
+                    key={item.id}
+                    item={item}
+                    onClick={(item) => setSelectedNews(item)}
+                    isListMode={viewMode === 'list'}
                   />
                 ))}
               </AnimatePresence>
@@ -279,19 +312,19 @@ export default function Dashboard() {
               onClick={() => setActiveTab('market')}
               className={`${styles.widgetTabBtn} ${activeTab === 'market' ? styles.widgetTabBtnActive : ''}`}
             >
-              <Activity size={14} /> <span>MARKET</span>
+              <Activity size={14} /> <span>마켓</span>
             </button>
             <button 
               onClick={() => setActiveTab('macro')}
               className={`${styles.widgetTabBtn} ${activeTab === 'macro' ? styles.widgetTabBtnActive : ''}`}
             >
-              <Globe size={14} /> <span>MACRO</span>
+              <Globe size={14} /> <span>거시경제</span>
             </button>
             <button 
               onClick={() => setActiveTab('flow')}
               className={`${styles.widgetTabBtn} ${activeTab === 'flow' ? styles.widgetTabBtnActive : ''}`}
             >
-              <Zap size={14} /> <span>FLOW</span>
+              <Zap size={14} /> <span>오더플로우</span>
             </button>
           </div>
 
@@ -321,23 +354,23 @@ export default function Dashboard() {
         <div className={styles.statusLeft}>
           <div className={styles.statusItem}>
             <div className={styles.pulse} />
-            <span>TERMINAL ACTIVE</span>
+            <span>터미널 활성 상태</span>
           </div>
           <div className={styles.statusSeparator} />
           <div className={styles.statusItem}>
-            <Wifi size={12} color="#22c55e" />
-            <span>CONNECTION: SECURE (SSL)</span>
+            <Wifi size={12} color={latency && latency < 500 ? "#22c55e" : "#f59e0b"} />
+            <span>응답 속도: {latency ? `${latency}ms` : '측정 중...'}</span>
           </div>
         </div>
         <div className={styles.statusRight}>
           <div className={styles.statusItem}>
             <Cpu size={12} />
-            <span>NODE ASIA-SEOUL-01</span>
+            <span>노드: {mounted ? '서울-KOREA-01' : '연결 중...'}</span>
           </div>
           <div className={styles.statusSeparator} />
           <div className={styles.statusItem}>
             <Clock size={12} />
-            <span suppressHydrationWarning>LAST SYNC: {mounted ? new Date().toLocaleTimeString() : '--:--:--'}</span>
+            <span suppressHydrationWarning>마지막 동기화: {mounted ? new Date().toLocaleTimeString('ko-KR') : '--:--:--'}</span>
           </div>
         </div>
       </footer>

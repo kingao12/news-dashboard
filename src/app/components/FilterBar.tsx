@@ -1,5 +1,5 @@
 import styles from './FilterBar.module.css';
-import { RefreshCw, Globe, MapPin, Flag, Compass, Navigation, Coins, ChevronDown, Search, Filter } from 'lucide-react';
+import { RefreshCw, Globe, MapPin, Flag, Compass, Navigation, Coins, ChevronDown, Search, Filter, LayoutGrid, List } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,9 +39,11 @@ interface FilterBarProps {
   setTopic: (t: string) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
+  viewMode: 'card' | 'list';
+  setViewMode: (mode: 'card' | 'list') => void;
 }
 
-export default function FilterBar({ country, setCountry, topic, setTopic, onRefresh, isRefreshing }: FilterBarProps) {
+export default function FilterBar({ country, setCountry, topic, setTopic, onRefresh, isRefreshing, viewMode, setViewMode }: FilterBarProps) {
   const [isCountryOpen, setIsCountryOpen] = useState(false);
   const [isTopicOpen, setIsTopicOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
@@ -64,12 +66,12 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
     <div className={styles.filterContainer}>
       <div className={styles.topRow}>
         <div className={styles.dropdownGroup}>
-          {/* 국가 선택 드롭다운 */}
+          {/* 국가 선택 */}
           <div className={styles.dropdownWrapper} ref={countryRef}>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { setIsCountryOpen(!isCountryOpen); setIsTopicOpen(false); }} 
+              onClick={() => { setIsCountryOpen(!isCountryOpen); setIsTopicOpen(false); }}
               className={`${styles.dropdownSwitch} ${isCountryOpen ? styles.dropdownSwitchActive : ''}`}
             >
               <CountryIcon size={16} className={styles.dropdownIcon} />
@@ -78,7 +80,7 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
             </motion.button>
             <AnimatePresence>
               {isCountryOpen && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -90,8 +92,8 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
                     {COUNTRIES.map(c => {
                       const Icon = c.icon;
                       return (
-                        <button 
-                          key={c.id} 
+                        <button
+                          key={c.id}
                           onClick={() => { setCountry(c.id); setIsCountryOpen(false); }}
                           className={`${styles.dropdownItem} ${country === c.id ? styles.activeDropdownItem : ''}`}
                         >
@@ -107,12 +109,12 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
 
           <div className={styles.separator} />
 
-          {/* 토픽 선택 드롭다운 */}
+          {/* 토픽 선택 */}
           <div className={styles.dropdownWrapper} ref={topicRef}>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { setIsTopicOpen(!isTopicOpen); setIsCountryOpen(false); }} 
+              onClick={() => { setIsTopicOpen(!isTopicOpen); setIsCountryOpen(false); }}
               className={`${styles.dropdownSwitch} ${isTopicOpen ? styles.dropdownSwitchActive : ''}`}
             >
               <Filter size={16} className={styles.dropdownIcon} />
@@ -121,7 +123,7 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
             </motion.button>
             <AnimatePresence>
               {isTopicOpen && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -131,8 +133,8 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
                   <div className={styles.menuLabel}><Search size={12} /> 뉴스 카테고리</div>
                   <div className={styles.menuList}>
                     {TOPICS.map(t => (
-                      <button 
-                        key={t.id} 
+                      <button
+                        key={t.id}
                         onClick={() => { setTopic(t.id); setIsTopicOpen(false); }}
                         className={`${styles.dropdownItem} ${topic === t.id ? styles.activeDropdownItem : ''}`}
                       >
@@ -145,18 +147,42 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
             </AnimatePresence>
           </div>
         </div>
-        
+
         <div style={{ flex: 1 }} />
 
-        <motion.button 
+        {/* 뷰 모드 토글 */}
+        <div className={styles.viewToggle}>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={() => setViewMode('card')}
+            className={`${styles.viewToggleBtn} ${viewMode === 'card' ? styles.viewToggleActive : ''}`}
+            title="카드 형식"
+          >
+            <LayoutGrid size={15} />
+            <span>카드</span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={() => setViewMode('list')}
+            className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleActive : ''}`}
+            title="리스트 형식"
+          >
+            <List size={15} />
+            <span>리스트</span>
+          </motion.button>
+        </div>
+
+        <div className={styles.separator} />
+
+        <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onRefresh} 
-          disabled={isRefreshing} 
+          onClick={onRefresh}
+          disabled={isRefreshing}
           className={styles.refreshBtn}
         >
           <RefreshCw size={16} className={isRefreshing ? styles.spin : ''} />
-          <span>SYNC</span>
+          <span>새로 고침</span>
         </motion.button>
       </div>
     </div>

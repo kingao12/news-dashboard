@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, memo, useCallback } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
@@ -75,7 +75,7 @@ const LivePrice = ({ basePrice, symbol, className, minWidth = '90px' }: { basePr
   );
 };
 
-const AssetLogo = ({ src, symbol, size = 22 }: { src?: string, symbol: string, size?: number }) => {
+const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string, symbol: string, size?: number }) => {
   const [error, setError] = useState(false);
   
   if (!src || error) {
@@ -105,7 +105,9 @@ const AssetLogo = ({ src, symbol, size = 22 }: { src?: string, symbol: string, s
       style={{ width: size, height: size, borderRadius: '50%', objectFit: 'contain', background: '#fff' }} 
     />
   );
-};
+});
+
+AssetLogo.displayName = 'AssetLogo';
 
 export default function MarketWidget() {
   const [activeTab, setActiveTab] = useState<'crypto' | 'stocks'>('crypto');
@@ -145,37 +147,44 @@ export default function MarketWidget() {
     refreshInterval: activeTab === 'stocks' && interval === '1m' ? 3000 : 30000 
   });
 
-  // Binance WebSocket 실시간 가격 스트림 관리
+  // Binance WebSocket 실시간 가격 스트림 관리 (throttle 적용)
   useEffect(() => {
     if (activeTab !== 'crypto') return;
 
     let ws: WebSocket | null = null;
+    // rAF 기반 삭대로 throttle: 한 프레임에 한 번만 dispatch
+    let rafId: number | null = null;
+    const batch = new Map<string, number>(); // symbol → latest price
+
+    const flush = () => {
+      batch.forEach((price, symbol) => {
+        window.dispatchEvent(new CustomEvent('binance-price-update', { detail: { symbol, price } }));
+      });
+      batch.clear();
+      rafId = null;
+    };
+
     const connectWS = () => {
       ws = new WebSocket('wss://stream.binance.com:9443/ws/!miniTicker@arr');
-      
+
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (Array.isArray(data)) {
           data.forEach(ticker => {
-            const symbol = ticker.s.replace('USDT', '');
-            const price = parseFloat(ticker.c);
-            
-            // 전역 이벤트 발행 (LivePrice 컴포넌트들이 구독)
-            window.dispatchEvent(new CustomEvent('binance-price-update', { 
-              detail: { symbol, price } 
-            }));
+            batch.set(ticker.s.replace('USDT', ''), parseFloat(ticker.c));
           });
+          // 아직 예약된 rAF가 없으면 등록
+          if (rafId === null) rafId = requestAnimationFrame(flush);
         }
       };
 
-      ws.onclose = () => {
-        setTimeout(connectWS, 3000);
-      };
+      ws.onclose = () => setTimeout(connectWS, 3000);
     };
 
     connectWS();
     return () => {
-      if (ws) ws.close();
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      ws?.close();
     };
   }, [activeTab]);
 
@@ -195,43 +204,44 @@ export default function MarketWidget() {
   const isLoading = activeTab === 'crypto' ? cryptoLoading : stockLoading;
   const error = activeTab === 'crypto' ? cryptoError : stockError;
 
-  const handleTabChange = (tab: 'crypto' | 'stocks') => {
+  const handleTabChange = useCallback((tab: 'crypto' | 'stocks') => {
     setActiveTab(tab);
-  };
+  }, []);
 
-  const toggleSMMA = (p: number) => {
-    const next = new Set(visibleSMMAs);
-    if (next.has(p)) next.delete(p);
-    else next.add(p);
-    setVisibleSMMAs(next);
-  };
+  const toggleSMMA = useCallback((p: number) => {
+    setVisibleSMMAs(prev => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  }, []);
 
-  const handleRankingClick = (item: any) => {
+  const handleRankingClick = useCallback((item: any) => {
     if (activeTab === 'crypto') {
       setCryptoSymbol(item.symbol);
     } else {
       setStockSymbol(item.symbol);
     }
-  };
+  }, [activeTab]);
 
-  // 1. Calculate Indicators with robust null-checks
   const { ohlcSeries, indicatorSeries, rsiSeries } = useMemo(() => {
     if (!data?.chart?.series || !Array.isArray(data.chart.series)) {
       return { ohlcSeries: [], indicatorSeries: [], rsiSeries: [] };
     }
-    
+
     const raw = data.chart.series;
     const closes = raw.map((d: any) => d.y[3]);
     const volumes = raw.map((d: any) => typeof d.v === 'number' ? d.v : 0);
 
-    // Candlestick series (last 60 for focus)
+    // 마지막 60개만 표시
     const displaySlice = raw.slice(-60);
-    const ohlc = displaySlice.map((d: any) => ({ x: d.x, y: Array.isArray(d.y) ? d.y : [0,0,0,0] }));
+    const ohlc = displaySlice.map((d: any) => ({ x: d.x, y: Array.isArray(d.y) ? d.y : [0, 0, 0, 0] }));
 
-    // Sync last candle with jittered price
+    // 마지막 캔들 라이브 동기화
     if (ohlc.length > 0 && typeof data?.chart?.price === 'number' && interval === '1m') {
       const live = data.chart.price;
-      const lastItem = {...ohlc[ohlc.length - 1]};
+      const lastItem = { ...ohlc[ohlc.length - 1] };
       const lastY = [...lastItem.y];
       lastY[3] = live;
       if (live > lastY[1]) lastY[1] = live;
@@ -240,47 +250,38 @@ export default function MarketWidget() {
       ohlc[ohlc.length - 1] = lastItem;
     }
 
+    // O(n) 인덱스 맵: raw.indexOf(d) O(n²) 제거
+    const rawIndexMap = new Map<number, number>(raw.map((d: any, i: number) => [d.x, i]));
+    const getIdx = (d: any) => rawIndexMap.get(d.x) ?? -1;
+
     const indicators: any[] = [];
-    
-    // VWMAs
+
     if (showVWMA && raw.length > 100) {
       const vwmals = calculateVWMA(closes, volumes, 100);
       indicators.push({
-        name: 'VWMA 100',
-        type: 'line',
-        data: displaySlice.map((d: any) => {
-          const idx = raw.indexOf(d);
-          return { x: d.x, y: vwmals[idx] ?? null };
-        }),
-        color: '#f43f5e'
+        name: 'VWMA 100', type: 'line',
+        data: displaySlice.map((d: any) => ({ x: d.x, y: vwmals[getIdx(d)] ?? null })),
+        color: '#f43f5e',
       });
     }
 
-    // SMMAs
     SMMA_PERIODS.forEach((p, idx) => {
       if (visibleSMMAs.has(p) && raw.length > p) {
         const smmals = calculateSMMA(closes, p);
         indicators.push({
-          name: `SMMA ${p}`,
-          type: 'line',
-          data: displaySlice.map((d: any) => {
-            const ridx = raw.indexOf(d);
-            return { x: d.x, y: smmals[ridx] ?? null };
-          }),
-          color: SMMA_COLORS[idx]
+          name: `SMMA ${p}`, type: 'line',
+          data: displaySlice.map((d: any) => ({ x: d.x, y: smmals[getIdx(d)] ?? null })),
+          color: SMMA_COLORS[idx],
         });
       }
     });
 
-    // RSI
     const rsils = calculateRSI(closes, 14);
-    const rsi = displaySlice.map((d: any) => {
-      const ridx = raw.indexOf(d);
-      return { x: d.x, y: rsils[ridx] ?? null };
-    });
+    const rsi = displaySlice.map((d: any) => ({ x: d.x, y: rsils[getIdx(d)] ?? null }));
 
     return { ohlcSeries: ohlc, indicatorSeries: indicators, rsiSeries: rsi };
   }, [data, visibleSMMAs, showVWMA, interval]);
+
 
   const mainChartOptions: any = useMemo(() => ({
     chart: {
@@ -418,7 +419,7 @@ export default function MarketWidget() {
             
             {(showRSI && typeof window !== 'undefined') && (
               <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: 800, marginBottom: '8px', letterSpacing: '0.05em' }}>RELATIVE STRENGTH INDEX (14)</div>
+                <div style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: 800, marginBottom: '8px', letterSpacing: '0.05em' }}>상대강도지수 (RSI 14)</div>
                 <Chart options={rsiChartOptions} series={[{ name: 'RSI', data: rsiSeries }]} type="line" height={150} />
               </div>
             )}

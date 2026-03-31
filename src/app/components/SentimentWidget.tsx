@@ -103,7 +103,7 @@ export default function SentimentWidget() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
           <div className="live-indicator" style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
-          LIVE FEED
+          실시간 데이터
         </div>
       </div>
 

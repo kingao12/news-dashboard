@@ -115,8 +115,8 @@ export default function CryptoVolumeWidget() {
           <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>코인 볼륨 익스체인지</h3>
         </div>
         <div style={{ display: 'flex', gap: '0.3rem' }}>
-          <div style={{ fontSize: '0.6rem', fontWeight: 900, padding: '0.2rem 0.5rem', background: 'rgba(34,197,94,0.05)', color: '#22c55e', borderRadius: '4px', border: '1px solid rgba(34,197,94,0.1)' }}>SPOT</div>
-          <div style={{ fontSize: '0.6rem', fontWeight: 900, padding: '0.2rem 0.5rem', background: 'rgba(99,102,241,0.05)', color: '#818cf8', borderRadius: '4px', border: '1px solid rgba(99,102,241,0.1)' }}>PERP</div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 900, padding: '0.2rem 0.5rem', background: 'rgba(34,197,94,0.05)', color: '#22c55e', borderRadius: '4px', border: '1px solid rgba(34,197,94,0.1)' }}>현물</div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 900, padding: '0.2rem 0.5rem', background: 'rgba(99,102,241,0.05)', color: '#818cf8', borderRadius: '4px', border: '1px solid rgba(99,102,241,0.1)' }}>선물</div>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function CryptoVolumeWidget() {
         {[
           { label: '현물 24H', value: fmt(data.summary.totalSpotVolume), color: '#22c55e' },
           { label: '선물 24H', value: fmt(data.summary.totalFuturesVolume), color: '#8b5cf6' },
-          { label: 'TOTAL', value: fmt(data.summary.totalCombinedVolume), color: '#f59e0b' },
+          { label: '전체 합계', value: fmt(data.summary.totalCombinedVolume), color: '#f59e0b' },
         ].map(item => (
           <div 
             key={item.label} 
@@ -145,10 +145,10 @@ export default function CryptoVolumeWidget() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 60px', gap: '1rem', padding: '0 0.5rem 0.5rem 0.5rem', fontSize: '0.6rem', color: '#64748b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid rgba(255,255,255,0.03)', position: 'sticky', top: 0, background: 'var(--bg-primary)', zIndex: 1 }}>
-          <span>ASSET / PRICE</span>
-          <span>SPOT VOL</span>
-          <span>FUTURES</span>
-          <span style={{ textAlign: 'right' }}>CHG</span>
+          <span>자산 / 가격</span>
+          <span>현물 거래량</span>
+          <span>선물 거래량</span>
+          <span style={{ textAlign: 'right' }}>변동</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {data.coins.map((coin: any, i: number) => (
