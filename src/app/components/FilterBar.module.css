@@ -74,7 +74,7 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  background: var(--bg-surface);
+  background: var(--bg-primary); /* 불투명한 기본 배경색 사용 */
   border: 1px solid var(--border-glass);
   border-radius: 16px;
   padding: 0.75rem;
