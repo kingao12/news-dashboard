@@ -35,65 +35,68 @@ declare global {
 
 const TradingViewChart = memo(({ symbol, theme, interval, isCrypto }: { symbol: string, theme: string, interval: string, isCrypto: boolean }) => {
   const container = useRef<HTMLDivElement>(null);
-  const chartId = useRef(`tv_chart_${Math.random().toString(36).substring(7)}`);
 
   useEffect(() => {
-    const initWidget = () => {
-      if (!container.current || typeof window.TradingView === 'undefined') return;
-      
-      container.current.innerHTML = '';
-      const intervalMap: Record<string, string> = {
-        '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D', '1w': 'W', '1M': 'M'
-      };
-      const tvInterval = intervalMap[interval] || '1';
-      
-      const formattedSymbol = isCrypto ? `BINANCE:${symbol.toUpperCase()}USDT.P` : (symbol.includes(':') ? symbol : `NASDAQ:${symbol}`);
+    if (!container.current) return;
+    
+    // 이전 위젯 인스턴스 및 스크립트 완벽 제거 (클린업)
+    container.current.innerHTML = '';
+    
+    const intervalMap: Record<string, string> = {
+      '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D', '1w': 'W', '1M': 'M'
+    };
+    const tvInterval = intervalMap[interval] || '1';
+    
+    // 현물 심볼 우선 사용으로 로딩 속도 최적화 (필요시 선물로 변경 가능)
+    const formattedSymbol = isCrypto ? `BINANCE:${symbol.toUpperCase()}USDT` : (symbol.includes(':') ? symbol : `NASDAQ:${symbol}`);
 
-      new window.TradingView.widget({
-        autosize: true,
-        symbol: formattedSymbol,
-        interval: tvInterval,
-        timezone: 'Asia/Seoul',
-        theme: theme === 'dark' ? 'dark' : 'light',
-        style: '1',
-        locale: 'kr',
-        toolbar_bg: theme === 'dark' ? '#131722' : '#f1f3f6',
-        enable_publishing: false,
-        hide_legend: false,
-        save_image: false,
-        container_id: chartId.current,
-        studies: ['RSI@tv-basicstudies'],
-        studies_overrides: { "relative strength index.rsi.length": 14 },
-        width: '100%',
-        height: '100%'
-      });
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    
+    // 트레이딩뷰 위젯 설정 객체
+    const widgetConfig = {
+      "autosize": true,
+      "symbol": formattedSymbol,
+      "interval": tvInterval,
+      "timezone": "Asia/Seoul",
+      "theme": theme === 'dark' ? 'dark' : 'light',
+      "style": "1",
+      "locale": "kr",
+      "enable_publishing": false,
+      "allow_symbol_change": false,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com",
+      "hide_top_toolbar": false,
+      "hide_legend": false,
+      "save_image": false,
+      "container_id": "tv_chart_container",
+      "studies": [
+        "RSI@tv-basicstudies",
+        "MASimple@tv-basicstudies"
+      ]
     };
 
-    if (typeof window.TradingView === 'undefined') {
-      const existingScript = document.getElementById('tradingview-widget-script');
-      if (!existingScript) {
-        const script = document.createElement('script');
-        script.id = 'tradingview-widget-script';
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.async = true;
-        script.onload = initWidget;
-        document.head.appendChild(script);
-      } else {
-        // 스크립트는 존재하지만 아직 로드 전일 수 있으므로 다시 체크
-        const checkTv = setInterval(() => {
-          if (typeof window.TradingView !== 'undefined') {
-            clearInterval(checkTv);
-            initWidget();
-          }
-        }, 100);
-        return () => clearInterval(checkTv);
+    script.innerHTML = JSON.stringify(widgetConfig);
+    container.current.appendChild(script);
+
+    return () => {
+      if (container.current) {
+        container.current.innerHTML = '';
       }
-    } else {
-      initWidget();
-    }
+    };
   }, [symbol, theme, interval, isCrypto]);
 
-  return <div id={chartId.current} ref={container} style={{ height: '850px', width: '100%' }} />;
+  return (
+    <div 
+      className="tradingview-widget-container" 
+      ref={container} 
+      style={{ height: '850px', width: '100%', background: '#000' }}
+    >
+      <div className="tradingview-widget-container__widget" style={{ height: '100%', width: '100%' }}></div>
+    </div>
+  );
 });
 TradingViewChart.displayName = 'TradingViewChart';
 
