@@ -1,10 +1,9 @@
+import { useState, useEffect, memo } from 'react';
 import styles from './NewsCard.module.css';
 import { ExternalLink, Clock, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-
-import { useState, useEffect } from 'react';
 
 interface NewsItem {
   id: string;
@@ -16,7 +15,7 @@ interface NewsItem {
   thumbnail?: string;
 }
 
-export default function NewsCard({ item, onClick }: { item: NewsItem, onClick: (item: NewsItem) => void }) {
+const NewsCard = memo(({ item, onClick }: { item: NewsItem, onClick: (item: NewsItem) => void }) => {
   const [timeAgo, setTimeAgo] = useState('');
   const [sentiment, setSentiment] = useState<{ label: string, color: string, icon: any } | null>(null);
 
@@ -48,9 +47,9 @@ export default function NewsCard({ item, onClick }: { item: NewsItem, onClick: (
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={{ opacity: 0, scale: 0.98 }}
       whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
       className={`${styles.card} glass-card`}
       onClick={() => onClick(item)}
@@ -105,4 +104,7 @@ export default function NewsCard({ item, onClick }: { item: NewsItem, onClick: (
       </div>
     </motion.div>
   );
-}
+});
+
+NewsCard.displayName = 'NewsCard';
+export default NewsCard;
