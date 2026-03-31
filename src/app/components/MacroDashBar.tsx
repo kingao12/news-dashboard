@@ -64,7 +64,7 @@ const DataBox = memo(({ label, value, subValue, change, icon: Icon, color = 'var
   return (
     <div style={{ 
       padding: '0.6rem 0.5rem', 
-      background: 'rgba(255,255,255,0.02)', 
+      background: 'var(--bg-secondary)', 
       borderRadius: '10px', 
       border: '1px solid var(--border-glass)',
       display: 'flex',
@@ -186,7 +186,7 @@ export default function MacroDashBar() {
         
         <div style={{ width: '1px', height: '20px', background: 'var(--border-glass)', alignSelf: 'center', margin: '0 0.1rem' }} />
         
-        <DataBox label="Bitcoin" value={`$${m.btc.value.toLocaleString(undefined, { minimumFractionDigits: 1 })}`} color="white" />
+        <DataBox label="Bitcoin" value={`$${m.btc.value.toLocaleString(undefined, { minimumFractionDigits: 1 })}`} color="var(--text-primary)" />
         <DataBox label="Ethereum" value={`$${m.eth.value.toLocaleString(undefined, { minimumFractionDigits: 1 })}`} color="#818cf8" />
         
         <div style={{ width: '1px', height: '20px', background: 'var(--border-glass)', alignSelf: 'center', margin: '0 0.1rem' }} />
