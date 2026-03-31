@@ -11,27 +11,46 @@
   color: #0f172a;
 }
 
-.header {
+.headerLayout {
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+  margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-glass);
 }
 
-.headerTopRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.headerRightSection {
+.brandSection {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  align-items: flex-end;
-  text-align: right;
+}
+
+.clockIntegrateSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.clockLabelTag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.headerActions {
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
 }
 
 .liveBadge {
@@ -51,23 +70,7 @@
 }
 
 .clockRow {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  width: 100%;
-}
-
-.clockRowLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.6rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  color: #22c55e;
-  text-transform: uppercase;
-  white-space: nowrap;
-  padding-right: 1rem;
+  display: none;
 }
 
 .clockTicker {

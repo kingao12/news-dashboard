@@ -172,43 +172,42 @@ export default function Dashboard() {
 
   return (
     <main className={styles.dashboard} data-theme={theme}>
-      <header className={styles.header}>
-        <div className={styles.clockRow} style={{ marginBottom: '1rem', border: 'none', background: 'rgba(255,255,255,0.02)', padding: '0.5rem 0' }}>
-          <div className={styles.clockRowLabel} style={{ borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-            <Clock size={12} />
-            WORLD TIME
-          </div>
-          <GlobalClockTicker />
-        </div>
-
-        <div className={styles.headerTopRow}>
-          <button
-            onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-            className={styles.themeToggleBtn}
-            aria-label="Toggle theme"
-          >
-            <div className={styles.themeBtnIcon}>
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </div>
-            <span className={styles.themeBtnLabel}>
-              {theme === 'light' ? '다크 모드' : '라이트 모드'}
-            </span>
-          </button>
-
-          <div className={styles.headerRightSection}>
+        <div className={styles.headerLayout}>
+          <div className={styles.brandSection}>
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               className={styles.liveBadge}
             >
               <Zap size={10} fill="currentColor" />
               LIVE GLOBAL TERMINAL
             </motion.div>
             <h1 className={styles.title}>Global <span className="gradient-text">Terminal</span></h1>
-            <p className={styles.subtitle}>Global Terminal 금융 뉴스 및 거시경제 데이터 익스체인지</p>
+            <p className={styles.subtitle}>실시간 금융 뉴스 및 거시경제 데이터 익스체인지</p>
+          </div>
+
+          <div className={styles.clockIntegrateSection}>
+            <div className={styles.clockLabelTag}>
+               <Clock size={10} /> WORLD TIME
+            </div>
+            <GlobalClockTicker />
+          </div>
+
+          <div className={styles.headerActions}>
+            <button
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+              className={styles.themeToggleBtn}
+              aria-label="Toggle theme"
+            >
+              <div className={styles.themeBtnIcon}>
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              </div>
+              <span className={styles.themeBtnLabel}>
+                {theme === 'light' ? '다크 모드' : '라이트 모드'}
+              </span>
+            </button>
           </div>
         </div>
-      </header>
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--bg-primary)' }}>
         <BreakingNewsTicker news={news.slice(0, 10)} />
