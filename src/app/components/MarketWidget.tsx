@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
 import { TrendingUp, TrendingDown, Coins, LineChart, Activity, RefreshCcw, Settings, Eye, EyeOff } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
 import { calculateSMMA, calculateRSI, calculateVWMA } from '../utils/indicators';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -29,46 +30,47 @@ const SMMA_PERIODS = [7, 15, 25, 50, 100, 200, 400];
 const SMMA_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
 const LivePrice = ({ basePrice, symbol, className, minWidth = '90px' }: { basePrice: number, symbol: string, className?: string, minWidth?: string }) => {
-  const [mounted, setMounted] = useState(false);
-  const [localTick, setLocalTick] = useState(0);
+  const [price, setPrice] = useState(basePrice);
+  const [flashClass, setFlashClass] = useState('');
+  const prevPrice = useRef(basePrice);
 
+  // 전역 윈도우 객체에 저장된 실시간 가격 구독
   useEffect(() => {
-    setMounted(true);
-    const timer = setInterval(() => setLocalTick(t => t + 1), 100);
-    return () => clearInterval(timer);
-  }, []);
+    const handlePriceUpdate = (e: any) => {
+      if (e.detail.symbol === symbol) {
+        const newPrice = e.detail.price;
+        if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
+        else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
+        
+        setPrice(newPrice);
+        prevPrice.current = newPrice;
+        
+        const timeout = setTimeout(() => setFlashClass(''), 800);
+        return () => clearTimeout(timeout);
+      }
+    };
 
-  if (!mounted) {
-    return (
-      <span className={className} style={{ 
-        fontVariantNumeric: 'tabular-nums', 
-        display: 'inline-block', 
-        minWidth: minWidth,
-        textAlign: 'right',
-        fontFamily: 'var(--font-mono), monospace',
-        flexShrink: 0
-      }}>
-        ${basePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </span>
-    );
-  }
+    window.addEventListener('binance-price-update', handlePriceUpdate);
+    return () => window.removeEventListener('binance-price-update', handlePriceUpdate);
+  }, [symbol]);
 
-  const seconds = new Date().getSeconds();
-  const ms = new Date().getMilliseconds();
-  const seed = symbol.charCodeAt(0) + (symbol.charCodeAt(symbol.length - 1) || 0);
-  const jitter = (Math.sin(seconds + ms/1000 + seed) * 0.0002) * basePrice;
-  const livePrice = basePrice + jitter;
+  // basePrice 변경 시 (서버 데이터 갱신) 동기화
+  useEffect(() => {
+    if (Math.abs(basePrice - price) / basePrice > 0.01) { // 1% 이상 차이 시에만 강제 동기화 (WS가 우선)
+      setPrice(basePrice);
+      prevPrice.current = basePrice;
+    }
+  }, [basePrice]);
 
   return (
-    <span className={className} style={{ 
-      fontVariantNumeric: 'tabular-nums', 
+    <span className={`${className} ${flashClass} terminal-text`} style={{ 
       display: 'inline-block', 
       minWidth: minWidth,
       textAlign: 'right',
-      fontFamily: 'var(--font-mono), monospace',
-      flexShrink: 0
+      flexShrink: 0,
+      transition: 'color 0.4s ease'
     }}>
-      ${livePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   );
 };
@@ -142,6 +144,40 @@ export default function MarketWidget() {
     revalidateOnFocus: false,
     refreshInterval: activeTab === 'stocks' && interval === '1m' ? 3000 : 30000 
   });
+
+  // Binance WebSocket 실시간 가격 스트림 관리
+  useEffect(() => {
+    if (activeTab !== 'crypto') return;
+
+    let ws: WebSocket | null = null;
+    const connectWS = () => {
+      ws = new WebSocket('wss://stream.binance.com:9443/ws/!miniTicker@arr');
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (Array.isArray(data)) {
+          data.forEach(ticker => {
+            const symbol = ticker.s.replace('USDT', '');
+            const price = parseFloat(ticker.c);
+            
+            // 전역 이벤트 발행 (LivePrice 컴포넌트들이 구독)
+            window.dispatchEvent(new CustomEvent('binance-price-update', { 
+              detail: { symbol, price } 
+            }));
+          });
+        }
+      };
+
+      ws.onclose = () => {
+        setTimeout(connectWS, 3000);
+      };
+    };
+
+    connectWS();
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     if (cryptoData?.marketCapList) {
@@ -304,7 +340,11 @@ export default function MarketWidget() {
   }), [isDark]);
 
   return (
-    <div className={styles.widgetPanel}>
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={styles.widgetPanel}
+    >
       <div className={styles.tabContainer}>
         <div style={{ display: 'flex', gap: '0.8rem' }}>
           <button onClick={() => handleTabChange('crypto')} className={`${styles.tabButton} ${activeTab === 'crypto' ? styles.tabButtonActive : ''}`}>
@@ -409,6 +449,6 @@ export default function MarketWidget() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

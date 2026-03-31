@@ -8,10 +8,13 @@ import NewsSkeleton from './components/NewsSkeleton';
 import SentimentWidget from './components/SentimentWidget';
 import MarketWidget from './components/MarketWidget';
 import MacroWidget from './components/MacroWidget';
+import EconomicCalendar from './components/EconomicCalendar';
+import WhaleTradesWidget from './components/WhaleTradesWidget';
 import CryptoVolumeWidget from './components/CryptoVolumeWidget';
 import TradeWidget from './components/TradeWidget';
-import WhaleTradesWidget from './components/WhaleTradesWidget';
-import { Sun, Moon } from 'lucide-react';
+import NewsDrawer from './components/NewsDrawer';
+import { Sun, Moon, Zap, TrendingUp, BarChart3, Globe, Clock, Calendar, LayoutGrid, Activity, LineChart, Cpu, Wifi } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface NewsItem {
   id: string;
@@ -93,6 +96,26 @@ const GlobalClockTicker = memo(() => {
 
 GlobalClockTicker.displayName = 'GlobalClockTicker';
 
+const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
+  if (!news || news.length === 0) return null;
+  
+  return (
+    <div className="ticker-wrap glass-panel" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, margin: '0 -2rem' }}>
+      <div style={{ display: 'flex', animation: 'ticker 40s linear infinite' }}>
+        {[...news, ...news].map((item, i) => (
+          <div key={`${item.id}-${i}`} className="ticker-item">
+            <span style={{ color: 'var(--accent-primary)', marginRight: '8px' }}>•</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginRight: '6px' }}>[{item.source}]</span>
+            {item.title}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+BreakingNewsTicker.displayName = 'BreakingNewsTicker';
+
 export default function Dashboard() {
   const [theme, setTheme] = useState('light');
   const [country, setCountry] = useState('KR');
@@ -103,6 +126,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'market' | 'macro' | 'flow'>('market');
+  const [mounted, setMounted] = useState(false);
 
   const fetchNews = useCallback(async (c: string, t: string, p: number, background = false) => {
     if (!background) setLoading(true);
@@ -135,6 +161,10 @@ export default function Dashboard() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handlePageChange = (p: number) => {
     setPage(p);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -143,13 +173,24 @@ export default function Dashboard() {
   return (
     <main className={styles.dashboard} data-theme={theme}>
       <header className={styles.header}>
-        {/* Top row: Title + Theme Toggle */}
+        <div className={styles.clockRow} style={{ marginBottom: '1rem', border: 'none', background: 'rgba(255,255,255,0.02)', padding: '0.5rem 0' }}>
+          <div className={styles.clockRowLabel} style={{ borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+            <Clock size={12} />
+            WORLD TIME
+          </div>
+          <GlobalClockTicker />
+        </div>
+
         <div className={styles.headerTopRow}>
           <div className={styles.headerLeft}>
-            <div className={styles.liveBadge}>
-              <span className={styles.pulse} />
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={styles.liveBadge}
+            >
+              <Zap size={10} fill="currentColor" />
               LIVE GLOBAL TERMINAL
-            </div>
+            </motion.div>
             <h1 className={styles.title}>Global <span className="gradient-text">Terminal</span></h1>
             <p className={styles.subtitle}>실시간 금융 뉴스 및 거시경제 데이터 익스체인지</p>
           </div>
@@ -167,27 +208,30 @@ export default function Dashboard() {
             </span>
           </button>
         </div>
-
-        {/* Bottom row: Real-time World Clock Ticker */}
-        <div className={styles.clockRow}>
-          <div className={styles.clockRowLabel}>
-            <span className={styles.pulse} style={{ background: '#22c55e' }} />
-            WORLD TIME
-          </div>
-          <GlobalClockTicker />
-        </div>
       </header>
 
-      <div className={styles.gridContainer}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--bg-primary)' }}>
+        <BreakingNewsTicker news={news.slice(0, 10)} />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className={styles.gridContainer}
+        style={{ marginTop: '1.5rem' }}
+      >
         <div className={styles.newsSection}>
-          <FilterBar
-            country={country}
-            setCountry={(c) => { setCountry(c); setPage(1); }}
-            topic={topic}
-            setTopic={(t) => { setTopic(t); setPage(1); }}
-            onRefresh={() => fetchNews(country, topic, page)}
-            isRefreshing={isRefreshing}
-          />
+          <div style={{ position: 'sticky', top: '50px', zIndex: 90, background: 'var(--bg-primary)', paddingBottom: '1rem' }}>
+            <FilterBar
+              country={country}
+              setCountry={(c) => { setCountry(c); setPage(1); }}
+              topic={topic}
+              setTopic={(t) => { setTopic(t); setPage(1); }}
+              onRefresh={() => fetchNews(country, topic, page)}
+              isRefreshing={isRefreshing}
+            />
+          </div>
 
           {error && <div className={styles.errorBanner}>{error}</div>}
 
@@ -197,11 +241,20 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              <div className={styles.newsGrid}>
+            <motion.div 
+              layout
+              className={styles.newsGrid}
+            >
+              <AnimatePresence mode="popLayout">
                 {news.map((item) => (
-                  <NewsCard key={item.id} item={item} />
+                  <NewsCard 
+                    key={item.id} 
+                    item={item} 
+                    onClick={(item) => setSelectedNews(item)} 
+                  />
                 ))}
-              </div>
+              </AnimatePresence>
+            </motion.div>
 
               {totalPages > 1 && (
                 <div className={styles.pagination}>
@@ -222,14 +275,78 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.widgetSection}>
-          <SentimentWidget />
-          <CryptoVolumeWidget />
-          <WhaleTradesWidget />
-          <MacroWidget />
-          <TradeWidget />
-          <MarketWidget />
+          <div className={styles.widgetTabs}>
+            <button 
+              onClick={() => setActiveTab('market')}
+              className={`${styles.widgetTabBtn} ${activeTab === 'market' ? styles.widgetTabBtnActive : ''}`}
+            >
+              <Activity size={14} /> <span>MARKET</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('macro')}
+              className={`${styles.widgetTabBtn} ${activeTab === 'macro' ? styles.widgetTabBtnActive : ''}`}
+            >
+              <Globe size={14} /> <span>MACRO</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('flow')}
+              className={`${styles.widgetTabBtn} ${activeTab === 'flow' ? styles.widgetTabBtnActive : ''}`}
+            >
+              <Zap size={14} /> <span>FLOW</span>
+            </button>
+          </div>
+
+          <div className={styles.widgetContent}>
+            {/* Always keep components mounted to maintain real-time data connection, but hide when inactive */}
+            <div className={styles.tabPanel} style={{ display: activeTab === 'market' ? 'flex' : 'none' }}>
+              <MarketWidget />
+              <SentimentWidget />
+            </div>
+            
+            <div className={styles.tabPanel} style={{ display: activeTab === 'macro' ? 'flex' : 'none' }}>
+              <EconomicCalendar />
+              <MacroWidget />
+              <TradeWidget />
+            </div>
+            
+            <div className={styles.tabPanel} style={{ display: activeTab === 'flow' ? 'flex' : 'none' }}>
+              <WhaleTradesWidget />
+              <CryptoVolumeWidget />
+            </div>
+          </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Pro Status Bar */}
+      <footer className={styles.statusBar}>
+        <div className={styles.statusLeft}>
+          <div className={styles.statusItem}>
+            <div className={styles.pulse} />
+            <span>TERMINAL ACTIVE</span>
+          </div>
+          <div className={styles.statusSeparator} />
+          <div className={styles.statusItem}>
+            <Wifi size={12} color="#22c55e" />
+            <span>CONNECTION: SECURE (SSL)</span>
+          </div>
+        </div>
+        <div className={styles.statusRight}>
+          <div className={styles.statusItem}>
+            <Cpu size={12} />
+            <span>NODE ASIA-SEOUL-01</span>
+          </div>
+          <div className={styles.statusSeparator} />
+          <div className={styles.statusItem}>
+            <Clock size={12} />
+            <span suppressHydrationWarning>LAST SYNC: {mounted ? new Date().toLocaleTimeString() : '--:--:--'}</span>
+          </div>
+        </div>
+      </footer>
+
+      <NewsDrawer 
+        item={selectedNews} 
+        onClose={() => setSelectedNews(null)} 
+      />
     </main>
   );
 }

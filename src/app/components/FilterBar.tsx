@@ -1,6 +1,7 @@
 import styles from './FilterBar.module.css';
-import { RefreshCw, Globe, MapPin, Flag, Compass, Navigation, Coins, ChevronDown } from 'lucide-react';
+import { RefreshCw, Globe, MapPin, Flag, Compass, Navigation, Coins, ChevronDown, Search, Filter } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const COUNTRIES = [
   { id: 'GLOBAL_ALL', label: '🌐 전체', icon: Globe },
@@ -65,61 +66,98 @@ export default function FilterBar({ country, setCountry, topic, setTopic, onRefr
         <div className={styles.dropdownGroup}>
           {/* 국가 선택 드롭다운 */}
           <div className={styles.dropdownWrapper} ref={countryRef}>
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { setIsCountryOpen(!isCountryOpen); setIsTopicOpen(false); }} 
               className={`${styles.dropdownSwitch} ${isCountryOpen ? styles.dropdownSwitchActive : ''}`}
             >
               <CountryIcon size={16} className={styles.dropdownIcon} />
-              <span>{selectedCountry.label}</span>
-              <ChevronDown size={16} className={`${styles.chevron} ${isCountryOpen ? styles.chevronOpen : ''}`} />
-            </button>
-            {isCountryOpen && (
-              <div className={styles.dropdownMenu}>
-                {COUNTRIES.map(c => {
-                  const Icon = c.icon;
-                  return (
-                    <button 
-                      key={c.id} 
-                      onClick={() => { setCountry(c.id); setIsCountryOpen(false); }}
-                      className={`${styles.dropdownItem} ${country === c.id ? styles.activeDropdownItem : ''}`}
-                    >
-                      <Icon size={14} /> {c.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              <span style={{ fontWeight: 700 }}>{selectedCountry.label}</span>
+              <ChevronDown size={14} className={`${styles.chevron} ${isCountryOpen ? styles.chevronOpen : ''}`} />
+            </motion.button>
+            <AnimatePresence>
+              {isCountryOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className={styles.dropdownMenu}
+                >
+                  <div className={styles.menuLabel}><Globe size={12} /> 국가/지역 필터</div>
+                  <div className={styles.menuGrid}>
+                    {COUNTRIES.map(c => {
+                      const Icon = c.icon;
+                      return (
+                        <button 
+                          key={c.id} 
+                          onClick={() => { setCountry(c.id); setIsCountryOpen(false); }}
+                          className={`${styles.dropdownItem} ${country === c.id ? styles.activeDropdownItem : ''}`}
+                        >
+                          <Icon size={13} /> <span>{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          <div className={styles.separator} />
 
           {/* 토픽 선택 드롭다운 */}
           <div className={styles.dropdownWrapper} ref={topicRef}>
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { setIsTopicOpen(!isTopicOpen); setIsCountryOpen(false); }} 
               className={`${styles.dropdownSwitch} ${isTopicOpen ? styles.dropdownSwitchActive : ''}`}
             >
-              <span>{selectedTopic.label}</span>
-              <ChevronDown size={16} className={`${styles.chevron} ${isTopicOpen ? styles.chevronOpen : ''}`} />
-            </button>
-            {isTopicOpen && (
-              <div className={styles.dropdownMenu}>
-                {TOPICS.map(t => (
-                  <button 
-                    key={t.id} 
-                    onClick={() => { setTopic(t.id); setIsTopicOpen(false); }}
-                    className={`${styles.dropdownItem} ${topic === t.id ? styles.activeDropdownItem : ''}`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            )}
+              <Filter size={16} className={styles.dropdownIcon} />
+              <span style={{ fontWeight: 700 }}>{selectedTopic.label}</span>
+              <ChevronDown size={14} className={`${styles.chevron} ${isTopicOpen ? styles.chevronOpen : ''}`} />
+            </motion.button>
+            <AnimatePresence>
+              {isTopicOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className={styles.dropdownMenu}
+                >
+                  <div className={styles.menuLabel}><Search size={12} /> 뉴스 카테고리</div>
+                  <div className={styles.menuList}>
+                    {TOPICS.map(t => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => { setTopic(t.id); setIsTopicOpen(false); }}
+                        className={`${styles.dropdownItem} ${topic === t.id ? styles.activeDropdownItem : ''}`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         
-        <button onClick={onRefresh} disabled={isRefreshing} className={styles.refreshBtn}>
+        <div style={{ flex: 1 }} />
+
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onRefresh} 
+          disabled={isRefreshing} 
+          className={styles.refreshBtn}
+        >
           <RefreshCw size={16} className={isRefreshing ? styles.spin : ''} />
-          <span>새로고침</span>
-        </button>
+          <span>SYNC</span>
+        </motion.button>
       </div>
     </div>
   );

@@ -14,9 +14,9 @@
 .header {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-glass);
 }
 
@@ -51,14 +51,8 @@
 .clockRow {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: 14px;
-  overflow: hidden;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  gap: 0.8rem;
+  width: 100%;
 }
 
 .clockRowLabel {
@@ -72,7 +66,6 @@
   text-transform: uppercase;
   white-space: nowrap;
   padding-right: 1rem;
-  border-right: 1px solid var(--border-glass);
 }
 
 .clockTicker {
@@ -247,7 +240,7 @@
 .gridContainer {
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(380px, 3fr);
-  gap: clamp(1rem, 2vw, 2rem);
+  gap: 2rem;
   align-items: start;
 }
 
@@ -256,7 +249,66 @@
   flex-direction: column;
   gap: 1.25rem;
   position: sticky;
-  top: 2rem;
+  top: 100px;
+  height: calc(100vh - 120px);
+  min-width: 400px;
+}
+
+.widgetTabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 0.25rem;
+  gap: 0.2rem;
+  backdrop-filter: blur(10px);
+}
+
+.widgetTabBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.widgetTabBtn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.widgetTabBtnActive {
+  background: var(--bg-surface) !important;
+  color: var(--accent-primary) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 10px var(--accent-glow);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.widgetContent {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  padding-right: 0.2rem;
+}
+
+.widgetContent::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .newsGrid {
@@ -329,6 +381,58 @@
   }
 }
 
+.statusBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-glass);
+  padding: 0.4rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 900;
+  backdrop-filter: blur(20px);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.statusLeft, .statusRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statusSeparator {
+  width: 1px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: status-pulse 2s infinite;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+@keyframes status-pulse {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
 @media (max-width: 1200px) {
   .gridContainer {
     grid-template-columns: 1fr;
@@ -338,12 +442,14 @@
   .widgetSection {
     position: static;
     margin-top: 2rem;
+    height: auto;
+    min-width: 0;
   }
 }
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: 1rem;
+    padding: 1rem 1rem 3rem 1rem;
   }
 
   .header {
@@ -363,5 +469,13 @@
 
   .newsGrid {
     grid-template-columns: 1fr;
+  }
+
+  .statusBar {
+    padding: 0.4rem 1rem;
+  }
+  
+  .statusRight {
+    display: none;
   }
 }

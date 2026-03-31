@@ -2,25 +2,44 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-glass);
-  border-radius: 20px;
   text-decoration: none;
   color: inherit;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
   height: 100%;
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(var(--blur-amount));
-  -webkit-backdrop-filter: blur(var(--blur-amount));
 }
 
-.card:hover {
-  transform: translateY(-10px) scale(1.01);
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(99, 102, 241, 0.15);
+.sentimentBadge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.inlineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .thumbnailContainer {
@@ -67,14 +86,14 @@
 }
 
 .source {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 900;
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   background: var(--accent-gradient);
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
   box-shadow: 0 4px 10px var(--accent-glow);
 }
 
@@ -116,20 +135,25 @@
 }
 
 .footer {
-  padding-top: 1.2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-glass);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  color: var(--accent-primary);
-  font-weight: 800;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.card:hover .footer {
-  color: #fff;
+.readMore {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.card:hover .readMore {
+  color: var(--text-primary);
 }
 
 .glow {

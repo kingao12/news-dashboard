@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './Widget.module.css';
-import { Send, Settings, Volume2, VolumeX, RefreshCcw } from 'lucide-react';
+import { Send, Settings, Volume2, VolumeX, RefreshCcw, Zap, BarChart3, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SYMBOLS = ['btcusdt', 'ethusdt', 'solusdt', 'xrpusdt', 'dogeusdt'];
 const USD_KRW_RATE = 1400; // 근사치 환율 하드코딩 (필요시 전역 상태 이용)
@@ -20,7 +21,7 @@ type Trade = {
 
 export default function WhaleTradesWidget() {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [thresholdKRW, setThresholdKRW] = useState<number>(1000000); // 디폴트 100만원
+  const [thresholdKRW, setThresholdKRW] = useState<number>(100000); // 디폴트 10만원으로 하향
   const [currencyMode, setCurrencyMode] = useState<'KRW' | 'USD' | 'BOTH'>('KRW');
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [volume, setVolume] = useState(0.5);
@@ -30,6 +31,7 @@ export default function WhaleTradesWidget() {
 
   // 100만, 1000만, 1억, 10억
   const thresholds = [
+    { label: '10만원', value: 100000 },
     { label: '100만원', value: 1000000 },
     { label: '1,000만원', value: 10000000 },
     { label: '1억원', value: 100000000 },
@@ -72,6 +74,11 @@ export default function WhaleTradesWidget() {
     osc.stop(ctx.currentTime + 0.15);
   };
 
+  const thresholdRef = useRef(thresholdKRW);
+  useEffect(() => {
+    thresholdRef.current = thresholdKRW;
+  }, [thresholdKRW]);
+
   useEffect(() => {
     const connectWS = () => {
       // Binance Futures Aggregate Trade Streams
@@ -79,22 +86,20 @@ export default function WhaleTradesWidget() {
       const ws = new WebSocket(`wss://fstream.binance.com/stream?streams=${streams}`);
       
       ws.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-        if (!payload.data) return;
-        
-        const data = payload.data;
-        // e: event type, s: symbol, p: price, q: quantity, m: is Buyer Maker
-        const price = parseFloat(data.p);
-        const qty = parseFloat(data.q);
-        const usdValue = price * qty;
-        const krwValue = usdValue * USD_KRW_RATE;
-        
-        // threshold 체크 (선택한 금액 이상일 때만 표시)
-        // state에서 읽어와야 하지만 클로저 문제로 setState 함수 형태 이용
-        setThresholdKRW(currThreshold => {
-          if (krwValue >= currThreshold) {
+        try {
+          const payload = JSON.parse(event.data);
+          if (!payload.data) return;
+          
+          const data = payload.data;
+          const price = parseFloat(data.p);
+          const qty = parseFloat(data.q);
+          const usdValue = price * qty;
+          const krwValue = usdValue * USD_KRW_RATE;
+          
+          // ref를 통해 최신 threshold 값을 확인하여 필터링
+          if (krwValue >= thresholdRef.current) {
             const trade: Trade = {
-              id: `${data.s}-${data.a}`,
+              id: `${data.s}-${data.a}-${data.T}`, // ID 유니크 확인 보완
               symbol: data.s,
               price,
               qty,
@@ -102,17 +107,19 @@ export default function WhaleTradesWidget() {
               krwValue,
               isBuyerMaker: data.m,
               time: data.T,
-              isFutures: true // fstream is futures
+              isFutures: true
             };
             
             setTrades(prev => {
-              const newTrades = [trade, ...prev].slice(0, 10); // 10개 유지
-              playBeep(!data.m); // m이 true면 seller가 hit 한거라 매도(숏), false면 buyer가 hit한거라 매수(롱)
+              if (prev.some(p => p.id === trade.id)) return prev;
+              const newTrades = [trade, ...prev].slice(0, 15); // 더 많은 목록 확인을 위해 15개로 상향
+              playBeep(!data.m); 
               return newTrades;
             });
           }
-          return currThreshold;
-        });
+        } catch (err) {
+          console.error("WS Message Error:", err);
+        }
       };
       
       ws.onclose = () => {
@@ -127,7 +134,7 @@ export default function WhaleTradesWidget() {
       if (wsRef.current) wsRef.current.close();
       if (audioContext.current) audioContext.current.close();
     };
-  }, [soundEnabled]); // playBeep takes soundEnabled directly, but reconnecting might be heavy. Let's just decouple it if possible, but it's simpler this way.
+  }, [soundEnabled]); 
 
   const formatValue = (krw: number, usd: number) => {
     switch(currencyMode) {
@@ -146,99 +153,127 @@ export default function WhaleTradesWidget() {
   };
 
   return (
-    <div className={styles.widgetPanel} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h3 className={styles.widgetHeader} style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Send size={16} color="#3b82f6" /> 실시간 고래 체결 내역
-        </h3>
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={styles.widgetPanel} 
+      style={{ 
+        display: 'flex', flexDirection: 'column', 
+        height: '450px', // 고정 높이 설정으로 밀림 방지
+        minHeight: '450px'
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <Zap size={18} style={{ color: '#f59e0b' }} />
+          <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>라이브 오더 플로우</h3>
+        </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <button 
-            onClick={() => setCurrencyMode(c => c === 'KRW' ? 'USD' : c === 'USD' ? 'BOTH' : 'KRW')}
-            style={{ filter: 'brightness(1.5)', fontSize: '0.8rem', background: 'transparent', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}
-          >
-            {currencyMode === 'KRW' ? '원화' : currencyMode === 'USD' ? '달러' : '원/달러'}
-          </button>
-          
-          <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div className={styles.actionGroup}>
+            <button 
+              onClick={() => setCurrencyMode(c => c === 'KRW' ? 'USD' : c === 'USD' ? 'BOTH' : 'KRW')}
+              className={styles.iconBtn}
+              title="통화 변경"
+            >
+              <span style={{ fontSize: '0.65rem', fontWeight: 900 }}>{currencyMode}</span>
+            </button>
+            
             <select 
               value={thresholdKRW} 
               onChange={(e) => setThresholdKRW(Number(e.target.value))}
-              style={{ background: 'var(--bg-glass)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+              className={styles.minimalSelect}
             >
-              {thresholds.map(t => <option key={t.value} value={t.value} style={{ background: '#1e293b', color: '#f8fafc' }}>≥ {t.label}</option>)}
+              {thresholds.map(t => <option key={t.value} value={t.value}>≥ {t.label}</option>)}
             </select>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            {soundEnabled && (
-              <input 
-                type="range" min="0" max="1" step="0.05" 
-                value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))}
-                style={{ width: '50px', accentColor: '#22c55e', cursor: 'pointer' }}
-                title={`볼륨 조절 (${Math.round(volume * 100)}%)`}
-              />
-            )}
-            <button onClick={() => setSoundEnabled(!soundEnabled)} style={{ background: 'transparent', border: 'none', color: soundEnabled ? '#22c55e' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}>
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            
+            <button 
+              onClick={() => setSoundEnabled(!soundEnabled)} 
+              className={`${styles.iconBtn} ${soundEnabled ? styles.activeIconBtn : ''}`}
+            >
+              {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
             </button>
           </div>
         </div>
       </div>
       
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.2rem' }}>
-        {trades.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '150px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            <RefreshCcw size={20} className={styles.spin} style={{ marginBottom: '0.5rem' }} />
-            고래 체결을 기다리는 중...
-          </div>
-        ) : (
-          trades.map((t, idx) => {
-            // isBuyerMaker: true means seller hit the bid (sell market order) => Red
-            // isBuyerMaker: false means buyer hit the ask (buy market order) => Green
-            const isBuy = !t.isBuyerMaker;
-            const color = isBuy ? '#22c55e' : '#ef4444';
-            const bgLight = isBuy ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)';
-            const borderLight = isBuy ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-            
-            return (
-              <div key={t.id + idx} style={{ 
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                background: bgLight, border: `1px solid ${borderLight}`,
-                padding: '0.6rem 0.8rem', borderRadius: '8px',
-                animation: 'slideDown 0.3s ease-out'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f59e0b' }}>
-                      BINANCE
-                    </span>
-                    <span style={{ fontSize: '0.7rem', background: '#334155', color: 'white', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>
-                      FUTURES
-                    </span>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.2rem', scrollbarWidth: 'none' }}>
+        <AnimatePresence initial={false}>
+          {trades.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b' }}
+            >
+              <RefreshCcw size={24} className={styles.spin} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em' }}>시그널 대기 중...</div>
+            </motion.div>
+          ) : (
+            trades.map((t, idx) => {
+              const isBuy = !t.isBuyerMaker;
+              const color = isBuy ? '#22c55e' : '#ef4444';
+              const glow = isBuy ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+              
+              return (
+                <motion.div 
+                  key={t.id}
+                  initial={{ opacity: 0, x: -10, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: 'auto' }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  style={{ 
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                    background: 'rgba(255, 255, 255, 0.02)', borderLeft: `3px solid ${color}`,
+                    padding: '0.8rem 1rem', borderRadius: '4px 12px 12px 4px',
+                    boxShadow: `0 4px 15px ${glow}`,
+                    marginBottom: '2px',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#64748b', letterSpacing: '0.1em' }}>BINANCE DATA</span>
+                      <span style={{ fontSize: '0.55rem', color: isBuy ? '#22c55e' : '#ef4444', fontWeight: 900, background: isBuy ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)', padding: '0.1rem 0.35rem', borderRadius: '2px' }}>
+                        {isBuy ? 'LONG INFLOW' : 'SHORT OUTFLOW'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.15rem' }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 950, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+                        {t.symbol.replace('USDT', '')}
+                      </span>
+                      <span className="terminal-text" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 650 }}>
+                        <Clock size={10} style={{ display: 'inline', marginRight: '3px', opacity: 0.5 }} />
+                        {new Date(t.time).toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {t.symbol.replace('USDT', '')}
-                  </span>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
-                    ${t.price.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
-                  </span>
                   
-                  <span style={{ 
-                    fontSize: '1rem', fontWeight: 900, color: color,
-                    minWidth: '60px', textAlign: 'right'
-                  }}>
-                    {isBuy ? '▲' : '▼'} {formatValue(t.krwValue, t.usdValue)}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                    <div className="terminal-text" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>
+                      ${t.price.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <motion.div 
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        style={{ width: 5, height: 5, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} 
+                      />
+                      <span style={{ 
+                        fontSize: '1.15rem', fontWeight: 950, color: color,
+                        fontFamily: 'var(--font-mono)', letterSpacing: '-0.04em'
+                      }}>
+                        {formatValue(t.krwValue, t.usdValue)}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }

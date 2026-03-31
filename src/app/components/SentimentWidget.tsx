@@ -2,7 +2,8 @@
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
-import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -19,17 +20,30 @@ const GaugeArc = ({ value }: { value: number }) => {
   const color = value <= 20 ? '#ef4444' : value <= 40 ? '#f97316' : value <= 60 ? '#eab308' : value <= 80 ? '#22c55e' : '#10b981';
 
   return (
-    <svg width="130" height="110" viewBox="0 0 130 120" style={{ overflow: 'visible' }}>
-      <circle cx="65" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10"
-        strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
-        strokeDashoffset={circumference * 0.375} strokeLinecap="round" />
-      <circle cx="65" cy="70" r="54" fill="none" stroke={color} strokeWidth="10"
-        strokeDasharray={`${circumference * 0.75 * pct} ${circumference}`}
-        strokeDashoffset={circumference * 0.375} strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.8s ease', filter: `drop-shadow(0 0 6px ${color}66)` }} />
-      <text x="65" y="60" textAnchor="middle" fill={color} fontSize="20" fontWeight="900" fontFamily="monospace">{value}</text>
-      <text x="65" y="75" textAnchor="middle" fill="#94a3b8" fontSize="8" fontWeight="700">/ 100</text>
-    </svg>
+    <div style={{ position: 'relative', width: '130px', height: '110px' }}>
+      <svg width="130" height="110" viewBox="0 0 130 120" style={{ overflow: 'visible' }}>
+        <circle cx="65" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="12"
+          strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
+          strokeDashoffset={circumference * 0.375} strokeLinecap="round" />
+        <motion.circle 
+          initial={{ strokeDasharray: `0 ${circumference}` }}
+          animate={{ strokeDasharray: `${circumference * 0.75 * pct} ${circumference}` }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          cx="65" cy="70" r="54" fill="none" stroke={color} strokeWidth="12"
+          strokeDashoffset={circumference * 0.375} strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 8px ${color}44)` }} />
+      </svg>
+      <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          style={{ fontSize: '1.8rem', fontWeight: 950, color: color, fontFamily: 'var(--font-mono)', lineHeight: 1 }}
+        >
+          {value}
+        </motion.div>
+        <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginTop: '2px' }}>SCORE</div>
+      </div>
+    </div>
   );
 };
 
@@ -43,20 +57,27 @@ const getInfo = (v: number) => {
 
 const MiniBar = ({ label, value }: { label: string; value: number }) => {
   const getStockColor = (val: number) => {
-    if (val < 50) return '#ef4444'; // 하락색 (빨강)
-    if (val === 50) return '#000000'; // 50일때는 검정색
-    return '#22c55e'; // 상승색 (미국 증시 상승 초록색)
+    if (val < 40) return '#ef4444';
+    if (val < 60) return '#64748b';
+    return '#22c55e';
   };
   const color = getStockColor(value);
   const { label: lab } = getInfo(value);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', minWidth: '60px', fontWeight: 600 }}>{label}</span>
-      <div style={{ flex: 1, height: '6px', borderRadius: '9999px', background: 'rgba(255,255,255,0.06)' }}>
-        <div style={{ width: `${value}%`, height: '100%', borderRadius: '9999px', background: color, transition: 'width 0.6s ease' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+      <span style={{ fontSize: '0.7rem', color: '#94a3b8', minWidth: '50px', fontWeight: 800, letterSpacing: '0.02em' }}>{label}</span>
+      <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.03)', position: 'relative', overflow: 'hidden' }}>
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          style={{ height: '100%', borderRadius: '2px', background: color, boxShadow: `0 0 8px ${color}44` }} 
+        />
       </div>
-      <span style={{ fontSize: '0.72rem', fontWeight: 800, color, minWidth: '28px', textAlign: 'right', fontFamily: 'monospace' }}>{value}</span>
-      <span style={{ fontSize: '0.65rem', color, minWidth: '55px', fontWeight: 700 }}>{lab}</span>
+      <div style={{ minWidth: '80px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{value}</span>
+        <span style={{ fontSize: '0.6rem', color, fontWeight: 900, textTransform: 'uppercase' }}>{lab}</span>
+      </div>
     </div>
   );
 };
@@ -70,59 +91,81 @@ export default function SentimentWidget() {
   const { color: cryptoColor } = getInfo(crypto.value);
 
   return (
-    <div className={styles.widgetPanel}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>
-          <Activity size={16} /> 공포·탐욕 지수 (Fear &amp; Greed)
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: '#94a3b8' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', animation: 'pulse 1.5s infinite' }} />
-          LIVE
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={styles.widgetPanel}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <ShieldAlert size={18} style={{ color: 'var(--accent-primary)' }} />
+          <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>센티멘트 터미널</h3>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+          <div className="live-indicator" style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
+          LIVE FEED
         </div>
       </div>
 
-      {/* Crypto Gauge */}
       <div style={{ 
         background: 'var(--bg-glass)', 
         borderRadius: '16px', 
         border: '1px solid var(--border-glass)', 
-        padding: '1rem',
-        marginBottom: '0.75rem',
+        padding: '1.25rem',
+        marginBottom: '1rem',
         display: 'flex',
         alignItems: 'center',
-        gap: '1rem'
+        gap: '1.5rem',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, padding: '0.5rem', opacity: 0.1 }}>
+          <Zap size={40} />
+        </div>
         <GaugeArc value={crypto.value} />
-        <div>
-          <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, marginBottom: '0.2rem' }}>가상자산 공포탐욕</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 900, color: cryptoColor }}>{crypto.label}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem' }}>
-            {crypto.change > 0 ? <TrendingUp size={12} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={12} color="#ef4444" /> : <Minus size={12} color="#94a3b8" />}
-            <span style={{ fontSize: '0.72rem', color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8', fontWeight: 700 }}>
-              전일 대비 {crypto.change > 0 ? '+' : ''}{crypto.change}p
-            </span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 900, marginBottom: '0.2rem', letterSpacing: '0.05em' }}>CRYPTO SENTIMENT</div>
+          <motion.div 
+            key={crypto.label}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            style={{ fontSize: '1.4rem', fontWeight: 950, color: cryptoColor, letterSpacing: '-0.02em' }}
+          >
+            {crypto.label}
+          </motion.div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.2rem 0.4rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+              {crypto.change > 0 ? <TrendingUp size={12} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={12} color="#ef4444" /> : <Minus size={12} color="#94a3b8" />}
+              <span style={{ fontSize: '0.75rem', color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                {crypto.change > 0 ? '+' : ''}{crypto.change}P
+              </span>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>
+              VIX: <span style={{ color: 'var(--text-primary)' }}>{data.vix}</span>
+            </div>
           </div>
-          <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>VIX 지수: {data.vix}</div>
         </div>
       </div>
 
-      {/* Market Multi-bars */}
       <div style={{ 
         background: 'var(--bg-glass)', 
-        borderRadius: '12px', 
+        borderRadius: '16px', 
         border: '1px solid var(--border-glass)', 
-        padding: '0.9rem'
+        padding: '1.25rem'
       }}>
-        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          글로벌 주식 시장 심리
+        <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 900, marginBottom: '1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          Global Equity Markets
         </div>
-        <MiniBar label="글로벌" value={data.stocks.global.value} />
-        <MiniBar label="🇺🇸 미국" value={data.stocks.global.value} />
-        <MiniBar label="🇰🇷 한국" value={data.stocks.korea.value} />
-        <MiniBar label="🇯🇵 일본" value={data.stocks.japan.value} />
-        <MiniBar label="🇪🇺 유럽" value={data.stocks.europe.value} />
-        <MiniBar label="🇨🇳 중국" value={data.stocks.china.value} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          <MiniBar label="GLOBAL" value={data.stocks.global.value} />
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.03)', margin: '0.4rem 0' }} />
+          <MiniBar label="USA" value={data.stocks.global.value} />
+          <MiniBar label="KOREA" value={data.stocks.korea.value} />
+          <MiniBar label="JAPAN" value={data.stocks.japan.value} />
+          <MiniBar label="EUROPE" value={data.stocks.europe.value} />
+          <MiniBar label="CHINA" value={data.stocks.china.value} />
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

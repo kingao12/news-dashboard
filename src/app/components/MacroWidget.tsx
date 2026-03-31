@@ -2,8 +2,9 @@ import { useState, useEffect, memo, useCallback } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { DollarSign, Droplets, Ship, Bitcoin, Activity } from 'lucide-react';
+import { DollarSign, Droplets, Ship, Bitcoin, Activity, Globe, TrendingUp } from 'lucide-react';
 import WidgetSkeleton from './WidgetSkeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -89,8 +90,15 @@ export default function MacroWidget() {
   }));
 
   return (
-    <div className={styles.widgetPanel}>
-      <h3 className={styles.widgetHeader}>🌍 글로벌 매크로 인디케이터 (Live)</h3>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={styles.widgetPanel}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+        <Globe size={20} className="live-indicator" style={{ color: 'var(--accent-primary)' }} />
+        <h3 className={styles.widgetHeader} style={{ margin: 0 }}>글로벌 매크로 터미널</h3>
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1rem' }}>
         <div className={styles.macroBox}>
@@ -158,100 +166,114 @@ export default function MacroWidget() {
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          <button onClick={() => setActiveTab('exchange')} className={`${styles.topicBtn} ${activeTab === 'exchange' ? styles.activeTopic : ''}`} style={{ padding: '0.4rem 0.8rem', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-            <DollarSign size={14} /> 실시간 환율
-          </button>
-          <button onClick={() => setActiveTab('commodities')} className={`${styles.topicBtn} ${activeTab === 'commodities' ? styles.activeTopic : ''}`} style={{ padding: '0.4rem 0.8rem', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-            <Droplets size={14} /> 원자재 선물
-          </button>
-          <button onClick={() => setActiveTab('trade')} className={`${styles.topicBtn} ${activeTab === 'trade' ? styles.activeTopic : ''}`} style={{ padding: '0.4rem 0.8rem', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-            <Ship size={14} /> 무역 현황
-          </button>
-          <button onClick={() => setActiveTab('crypto')} className={`${styles.topicBtn} ${activeTab === 'crypto' ? styles.activeTopic : ''}`} style={{ padding: '0.4rem 0.8rem', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-            <Bitcoin size={14} /> 코인 거래량
-          </button>
+          {(['exchange', 'commodities', 'trade', 'crypto'] as const).map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab)} 
+              className={`${styles.topicBtn} ${activeTab === tab ? styles.activeTopic : ''}`} 
+              style={{ padding: '0.4rem 0.8rem', display: 'flex', gap: '0.3rem', alignItems: 'center', position: 'relative' }}
+            >
+              {tab === 'exchange' && <DollarSign size={14} />}
+              {tab === 'commodities' && <Droplets size={14} />}
+              {tab === 'trade' && <Ship size={14} />}
+              {tab === 'crypto' && <Bitcoin size={14} />}
+              {tab === 'exchange' ? '실시간 환율' : tab === 'commodities' ? '원자재 선물' : tab === 'trade' ? '무역 현황' : '코인 거래량'}
+              {activeTab === tab && (
+                <motion.div layoutId="macroTab" className="tab-underline" style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, background: 'var(--accent-primary)' }} />
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}
-        <div style={{ minHeight: '180px' }}>
-          {activeTab === 'exchange' && (
-            <div className={styles.exchangeGrid}>
-              {data.exchangeRates.map((ex: any) => (
-                <div key={ex.pair} className={styles.exchangeItem}>
-                  <div className={styles.exchangeHeader}>
-                    <span className={styles.exchangePair}>{ex.pair}</span>
-                    <span className={ex.change >= 0 ? styles.plus : styles.minus}>
-                      {ex.change >= 0 ? '▲' : '▼'} {Math.abs(ex.change).toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className={styles.exchangeRateVal}>
-                    <span className={styles.rateHighlight}>
-                      {ex.rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'commodities' && (
-            <div className={styles.exchangeGrid}>
-              {data.commodities?.map((c: any) => (
-                <div key={c.name} className={styles.exchangeItem}>
-                  <div className={styles.exchangeHeader}>
-                    <span className={styles.exchangePair}>{c.name}</span>
-                    <span className={c.change >= 0 ? styles.plus : styles.minus}>
-                      {c.change >= 0 ? '▲' : '▼'} {Math.abs(c.change).toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className={styles.exchangeRateVal}>
-                    <span className={styles.rateHighlight} style={{ color: 'var(--text-primary)' }}>
-                      ${c.value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'trade' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {!tradeData ? <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-secondary)' }}><Activity className={styles.spin} size={20} /></div> : 
-                tradeData.countries.slice(0, 6).map((c: any) => (
-                  <div key={c.code} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0.8rem', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{c.name}</div>
-                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
-                      <span style={{ color: '#818cf8' }}>수출: ${c.exports.toLocaleString()}B</span>
-                      <span style={{ color: '#fb7185' }}>수입: ${c.imports.toLocaleString()}B</span>
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-          )}
-
-          {activeTab === 'crypto' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-              {!cryptoData ? <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '1rem', color: 'var(--text-secondary)' }}><Activity className={styles.spin} size={20} /></div> : 
-                cryptoData.coins.slice(0, 6).map((coin: any) => (
-                  <div key={coin.symbol} style={{ background: 'var(--bg-glass)', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                      <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{coin.symbol}</span>
-                      <span style={{ color: coin.changePercent >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: '0.8rem' }}>
-                        {coin.changePercent >= 0 ? '+' : ''}{coin.changePercent}%
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={activeTab}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
+            style={{ minHeight: '180px' }}
+          >
+            {activeTab === 'exchange' && (
+              <div className={styles.exchangeGrid}>
+                {data.exchangeRates.map((ex: any) => (
+                  <div key={ex.pair} className={styles.exchangeItem}>
+                    <div className={styles.exchangeHeader}>
+                      <span className={styles.exchangePair}>{ex.pair}</span>
+                      <span className={ex.change >= 0 ? styles.plus : styles.minus}>
+                        {ex.change >= 0 ? '▲' : '▼'} {Math.abs(ex.change).toFixed(2)}%
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                      <span>현물: ${(coin.spotQuoteVolume / 1000000).toFixed(1)}M</span>
-                      <span>선물: ${(coin.futuresQuoteVolume / 1000000).toFixed(1)}M</span>
+                    <div className={styles.exchangeRateVal}>
+                      <span className={styles.rateHighlight}>
+                        {ex.rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
                     </div>
                   </div>
-                ))
-              }
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'commodities' && (
+              <div className={styles.exchangeGrid}>
+                {data.commodities?.map((c: any) => (
+                  <div key={c.name} className={styles.exchangeItem}>
+                    <div className={styles.exchangeHeader}>
+                      <span className={styles.exchangePair}>{c.name}</span>
+                      <span className={c.change >= 0 ? styles.plus : styles.minus}>
+                        {c.change >= 0 ? '▲' : '▼'} {Math.abs(c.change).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className={styles.exchangeRateVal}>
+                      <span className={styles.rateHighlight} style={{ color: 'var(--text-primary)' }}>
+                        ${c.value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'trade' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {!tradeData ? <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-secondary)' }}><Activity className={styles.spin} size={20} /></div> : 
+                  tradeData.countries.slice(0, 6).map((c: any) => (
+                    <div key={c.code} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0.8rem', background: 'var(--bg-glass)', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{c.name}</div>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
+                        <span style={{ color: '#818cf8' }}>수출: ${c.exports.toLocaleString()}B</span>
+                        <span style={{ color: '#fb7185' }}>수입: ${c.imports.toLocaleString()}B</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+
+            {activeTab === 'crypto' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                {!cryptoData ? <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '1rem', color: 'var(--text-secondary)' }}><Activity className={styles.spin} size={20} /></div> : 
+                  cryptoData.coins.slice(0, 6).map((coin: any) => (
+                    <div key={coin.symbol} style={{ background: 'var(--bg-glass)', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                        <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{coin.symbol}</span>
+                        <span style={{ color: coin.changePercent >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600, fontSize: '0.8rem' }}>
+                          {coin.changePercent >= 0 ? '+' : ''}{coin.changePercent}%
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                        <span>현물: ${(coin.spotQuoteVolume / 1000000).toFixed(1)}M</span>
+                        <span>선물: ${(coin.futuresQuoteVolume / 1000000).toFixed(1)}M</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }
