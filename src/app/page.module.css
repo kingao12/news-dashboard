@@ -26,10 +26,12 @@
   align-items: flex-start;
 }
 
-.headerLeft {
+.headerRightSection {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  align-items: flex-end;
+  text-align: right;
 }
 
 .liveBadge {
@@ -458,9 +460,14 @@
     gap: 1rem;
   }
 
-  .headerRight {
+  .headerRightSection {
     align-items: flex-start;
+    text-align: left;
     width: 100%;
+  }
+
+  .title {
+    text-align: left;
   }
 
   .title {

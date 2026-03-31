@@ -182,19 +182,6 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.headerTopRow}>
-          <div className={styles.headerLeft}>
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={styles.liveBadge}
-            >
-              <Zap size={10} fill="currentColor" />
-              LIVE GLOBAL TERMINAL
-            </motion.div>
-            <h1 className={styles.title}>Global <span className="gradient-text">Terminal</span></h1>
-            <p className={styles.subtitle}>실시간 금융 뉴스 및 거시경제 데이터 익스체인지</p>
-          </div>
-
           <button
             onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
             className={styles.themeToggleBtn}
@@ -207,6 +194,19 @@ export default function Dashboard() {
               {theme === 'light' ? '다크 모드' : '라이트 모드'}
             </span>
           </button>
+
+          <div className={styles.headerRightSection}>
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={styles.liveBadge}
+            >
+              <Zap size={10} fill="currentColor" />
+              LIVE GLOBAL TERMINAL
+            </motion.div>
+            <h1 className={styles.title}>Global <span className="gradient-text">Terminal</span></h1>
+            <p className={styles.subtitle}>Global Terminal 금융 뉴스 및 거시경제 데이터 익스체인지</p>
+          </div>
         </div>
       </header>
 
