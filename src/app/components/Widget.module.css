@@ -5,27 +5,69 @@
   flex-direction: column;
   gap: 1rem;
   position: relative;
-  overflow: hidden;
-  contain: content;
+  overflow: auto;
+  height: 100%;
+  min-height: 100%;
 }
 
 /* Flash animation for live price updates */
 @keyframes price-flash-up {
-  0% { color: #22c55e; filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.4)); background: rgba(34, 197, 94, 0.1); }
-  100% { color: inherit; filter: none; background: transparent; }
+  0% {
+    color: #22c55e;
+    filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.4));
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  100% {
+    color: inherit;
+    filter: none;
+    background: transparent;
+  }
 }
 
 @keyframes price-flash-down {
-  0% { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4)); background: rgba(239, 68, 68, 0.1); }
-  100% { color: inherit; filter: none; background: transparent; }
+  0% {
+    color: #ef4444;
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4));
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  100% {
+    color: inherit;
+    filter: none;
+    background: transparent;
+  }
 }
 
-.priceFlashUp { animation: price-flash-up 1s ease-out; border-radius: 4px; padding: 0 4px; }
-.priceFlashDown { animation: price-flash-down 1s ease-out; border-radius: 4px; padding: 0 4px; }
+.priceFlashUp {
+  animation: price-flash-up 1s ease-out;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.priceFlashDown {
+  animation: price-flash-down 1s ease-out;
+  border-radius: 4px;
+  padding: 0 4px;
+}
 
 @keyframes fadeSlideUp {
-  0% { opacity: 0; transform: translateY(15px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chartSection {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .widgetHeader {
@@ -81,9 +123,9 @@
 }
 
 .cryptoPrice {
-  text-align: right;
-  font-weight: 600;
-  font-size: 0.95rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 .positiveText {
@@ -95,7 +137,8 @@
   gap: 0.2rem;
 }
 
-.negativeText, .minus {
+.negativeText,
+.minus {
   color: #ef4444;
   font-size: 0.75rem;
   display: flex;
@@ -230,17 +273,13 @@
     grid-template-columns: 1fr;
   }
 }
+
 .cryptoHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-}
-
-.cryptoPrice {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .symbol {
@@ -265,6 +304,7 @@
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .plusBg {
@@ -286,12 +326,24 @@
 }
 
 @keyframes live-pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.widgetLoading, .widgetError {
+.widgetLoading,
+.widgetError {
   padding: 2rem;
   text-align: center;
   color: var(--text-secondary);
@@ -309,7 +361,9 @@
   border-radius: 12px;
   border: 1px solid var(--border-glass);
   backdrop-filter: blur(12px);
+  flex-shrink: 0;
 }
+
 .tabButton {
   padding: 0.55rem 0.5rem;
   font-size: 0.85rem;
@@ -326,10 +380,12 @@
   gap: 0.4rem;
   white-space: nowrap;
 }
+
 .tabButton:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
+
 .tabButtonActive {
   background: var(--accent-gradient) !important;
   color: #fff !important;
@@ -337,59 +393,6 @@
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
-.rankingList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
-  max-height: 250px;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-.rankingItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.8rem;
-  background: var(--bg-glass);
-  border-radius: 8px;
-  border: 1px solid var(--border-glass);
-  transition: all 0.2s ease;
-}
-.rankingItem:hover {
-  transform: translateX(6px) scale(1.01);
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.15);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.rankInfo {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-.rankIndex {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--text-secondary);
-  width: 16px;
-}
-.rankSymbol {
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-.rankCap {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-.rankPriceCol {
-  text-align: right;
-}
-.rankPrice {
-  font-weight: 700;
-  font-size: 0.9rem;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
 .intervalBar {
   display: flex;
   gap: 0.35rem;
@@ -397,16 +400,19 @@
   overflow-x: auto;
   padding: 0.15rem 0 0.3rem 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   flex-shrink: 0;
 }
+
 .intervalBar::-webkit-scrollbar {
   height: 3px;
 }
+
 .intervalBar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
+
 .intervalBar::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -415,7 +421,7 @@
   padding: 0.3rem 0.65rem;
   font-size: 0.7rem;
   font-weight: 800;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
   border-radius: 6px;
@@ -424,6 +430,7 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
+
 .intervalActive {
   background: var(--accent-gradient);
   color: white;
@@ -439,9 +446,11 @@
   border-radius: 8px;
   transition: all 0.2s ease;
 }
-.settingsBtn:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
 
-
+.settingsBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
 
 .settingsOverlay {
   background: var(--bg-surface);
@@ -455,24 +464,24 @@
   box-shadow: var(--card-shadow);
 }
 
-/* ApexCharts 전역 테마 오버라이드 (다크/라이트 모드 대응) */
 :global(.apexcharts-tooltip) {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-glass) !important;
   color: var(--text-primary) !important;
   box-shadow: var(--card-shadow) !important;
 }
+
 :global(.apexcharts-tooltip-title) {
   background: var(--bg-secondary) !important;
   border-bottom: 1px solid var(--border-glass) !important;
   color: var(--text-primary) !important;
   font-family: inherit !important;
 }
+
 :global(.apexcharts-tooltip-text) {
   color: var(--text-primary) !important;
 }
 
-/* Macro Widget Tab Buttons */
 .topicBtn {
   background: transparent;
   border: 1px solid var(--border-glass);
@@ -482,16 +491,19 @@
   transition: all 0.2s ease;
   white-space: nowrap;
 }
+
 .topicBtn:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
+
 .activeTopic {
   background: var(--bg-glass);
   color: #3b82f6;
   border-color: #3b82f6;
   font-weight: 700;
 }
+
 :global(.apexcharts-menu) {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-glass) !important;
@@ -503,31 +515,38 @@
   flex-direction: column;
   gap: 0.5rem;
 }
-.settingGroup span { font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); }
 
-.toggleRow, .smmaRow {
+.settingGroup span {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.toggleRow,
+.smmaRow {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
-.toggleRow button, .smmaRow button {
+.toggleRow button,
+.smmaRow button {
   padding: 0.3rem 0.7rem;
   font-size: 0.7rem;
   font-weight: 700;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
   border-radius: 6px;
   cursor: pointer;
 }
+
 .toggleOn {
   background: rgba(99, 102, 241, 0.2) !important;
   color: #8b5cf6 !important;
   border-color: #8b5cf6 !important;
 }
 
-/* Phase 2: Professional Terminal UI Components */
 .actionGroup {
   display: flex;
   align-items: center;
@@ -578,12 +597,15 @@
   color: var(--text-primary);
 }
 
-/* --- Ranking List & Items --- */
 .rankingList {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin-top: 1rem;
+  min-height: 120px;
+  max-height: 180px;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .rankingItem {
@@ -623,6 +645,11 @@
   color: var(--text-primary);
 }
 
+.rankCap {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
 .rankPriceCol {
   display: flex;
   flex-direction: column;
@@ -632,4 +659,6 @@
 .rankPrice {
   font-weight: 700;
   font-size: 0.95rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
