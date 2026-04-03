@@ -294,22 +294,22 @@ export default function WhaleTradesWidget() {
       style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '400px' }}
     >
       {/* 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <Zap size={18} style={{ color: '#f59e0b' }} />
-          <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>라이브 오더 플로우</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', flexWrap: 'nowrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <Zap size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+          <h3 className={styles.widgetHeader} style={{ marginBottom: 0, fontSize: '0.95rem', whiteSpace: 'nowrap' }}>라이브 오더 플로우</h3>
           {/* WS 연결 상태 뱃지 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '2px 8px', border: `1px solid ${statusColor}33` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '2px 8px', border: `1px solid ${statusColor}33`, flexShrink: 0 }}>
             <motion.div
               animate={{ opacity: wsStatus === 'live' ? [0.5, 1, 0.5] : 1 }}
               transition={{ duration: 1.5, repeat: Infinity }}
               style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }}
             />
-            <span style={{ fontSize: '0.58rem', fontWeight: 800, color: statusColor, letterSpacing: '0.05em' }}>{statusLabel}</span>
+            <span style={{ fontSize: '0.58rem', fontWeight: 800, color: statusColor, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{statusLabel}</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
           {/* 심볼 필터 */}
           <select
             value={symbolFilter}

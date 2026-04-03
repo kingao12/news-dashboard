@@ -336,8 +336,10 @@
 }
 
 .widgetContent {
+  flex: 1;
   overflow: visible;
   padding-right: 0.2rem;
+  min-height: 0;
 }
 
 .widgetContent::-webkit-scrollbar {
