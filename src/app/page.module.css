@@ -274,7 +274,7 @@
 
 @media (min-width: 1600px) {
   .gridContainer {
-    grid-template-columns: minmax(0, 2fr) 520px;
+    grid-template-columns: minmax(0, 2fr) 600px;
   }
 }
 
