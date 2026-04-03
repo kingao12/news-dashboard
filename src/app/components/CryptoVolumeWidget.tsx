@@ -103,9 +103,8 @@ export default function CryptoVolumeWidget() {
       animate={{ opacity: 1, scale: 1 }}
       className={styles.widgetPanel}
       style={{ 
-        height: '450px', 
-        minHeight: '450px',
-        maxHeight: '450px',
+        flex: 1,
+        minHeight: '400px',
         display: 'flex',
         flexDirection: 'column',
         contain: 'content'

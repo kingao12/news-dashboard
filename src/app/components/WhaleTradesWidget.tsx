@@ -291,7 +291,7 @@ export default function WhaleTradesWidget() {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       className={styles.widgetPanel}
-      style={{ display: 'flex', flexDirection: 'column', height: '650px', minHeight: '650px' }}
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '400px' }}
     >
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>

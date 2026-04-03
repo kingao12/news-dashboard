@@ -251,34 +251,45 @@
 
 .gridContainer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(440px, 440px);
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) 520px;
+  gap: 2rem;
   align-items: start;
 }
 
 @media (min-width: 1600px) {
   .gridContainer {
-    grid-template-columns: minmax(0, 2.2fr) minmax(460px, 1fr);
+    grid-template-columns: minmax(0, 2fr) 520px;
   }
 }
 
 @media (min-width: 1920px) {
   .gridContainer {
-    grid-template-columns: minmax(0, 2.5fr) minmax(480px, 1fr);
+    grid-template-columns: minmax(0, 2.5fr) 550px;
   }
 }
 
 .widgetSection {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   position: sticky;
   top: 100px;
   height: calc(100vh - 140px);
-  min-height: 700px;
-  max-height: 1200px;
-  min-width: 440px;
+  min-height: 800px;
+  min-width: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.widgetSection::-webkit-scrollbar {
+  width: 4px;
+}
+.widgetSection::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-radius: 10px;
 }
 
 .widgetTabs {
@@ -325,21 +336,19 @@
 }
 
 .widgetContent {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
+  overflow: visible;
   padding-right: 0.2rem;
 }
 
 .widgetContent::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+  display: none;
 }
 
 .tabPanel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  height: 100%;
+  gap: 1rem;
+  height: auto;
 }
 
 .newsGrid {

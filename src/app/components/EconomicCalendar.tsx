@@ -93,8 +93,7 @@ export default function EconomicCalendar() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-        {/* 첫 이벤트 전 '지금' 표시 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
         {currentTimeInMinutes < (parseInt(MOCK_EVENTS[0].time.split(':')[0]) * 60 + parseInt(MOCK_EVENTS[0].time.split(':')[1])) && (
           <NowTimelineMarker />
         )}
@@ -102,93 +101,68 @@ export default function EconomicCalendar() {
         {MOCK_EVENTS.map((event, index) => {
           const [h, m] = event.time.split(':').map(Number);
           const eventTimeInMinutes = h * 60 + m;
-          const isPast = eventTimeInMinutes < currentTimeInMinutes - 15; 
-          const isActive = Math.abs(eventTimeInMinutes - currentTimeInMinutes) <= 45; 
-          
+          const isPast = eventTimeInMinutes < currentTimeInMinutes - 15;
+          const isActive = Math.abs(eventTimeInMinutes - currentTimeInMinutes) <= 45;
+
           const nextEvent = MOCK_EVENTS[index + 1];
           const nextEventTime = nextEvent ? (parseInt(nextEvent.time.split(':')[0]) * 60 + parseInt(nextEvent.time.split(':')[1])) : 1440;
           const showNowLineAfter = currentTimeInMinutes >= eventTimeInMinutes && currentTimeInMinutes < nextEventTime;
 
           return (
             <React.Fragment key={event.id}>
-              <motion.div 
-                whileHover={{ x: 5 }}
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '0.6rem', 
-                  padding: '1.25rem 1rem', 
-                  background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-glass)', 
+              <motion.div
+                whileHover={{ x: 4 }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  padding: '1rem 1rem',
+                  background: isActive ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-glass)',
                   borderRadius: '12px',
                   border: isActive ? '2px solid var(--accent-primary)' : '1px solid var(--border-glass)',
                   cursor: 'pointer',
                   opacity: isPast ? 0.35 : 1,
-                  boxShadow: isActive ? '0 0 25px rgba(99, 102, 241, 0.2)' : 'none',
+                  boxShadow: isActive ? '0 0 20px rgba(99,102,241,0.15)' : 'none',
                   position: 'relative',
                   overflow: 'hidden',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  transition: 'all 0.25s ease'
                 }}
               >
                 {isActive && (
-                  <div style={{ position: 'absolute', top: '0.5rem', right: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <span className="live-dot" style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block' }} />
-                    <span style={{ fontSize: '0.65rem', fontWeight: 950, color: '#ef4444', letterSpacing: '0.02em' }}>LIVE</span>
+                  <div style={{ position: 'absolute', top: '0.5rem', right: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+                    <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#ef4444', letterSpacing: '0.04em' }}>LIVE</span>
                   </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.618rem' }}>
-                    <span style={{ 
-                      fontFamily: 'var(--font-mono)', 
-                      fontWeight: 950, 
-                      fontSize: '0.95rem',
-                      color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)',
-                      letterSpacing: '-0.02em'
-                    }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '0.9rem', color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                       {event.time}
                     </span>
-                    <span style={{ 
-                      fontSize: '0.6rem', 
-                      fontWeight: 950, 
-                      color: '#64748b',
-                      background: 'rgba(255,255,255,0.03)',
-                      padding: '0.15rem 0.42rem',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      textTransform: 'uppercase'
-                    }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', background: 'rgba(255,255,255,0.04)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
                       {event.country}
                     </span>
                   </div>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.3rem',
-                    fontSize: '0.6rem',
-                    fontWeight: 950,
-                    textTransform: 'uppercase',
-                    color: event.impact === 'High' ? '#ef4444' : event.impact === 'Medium' ? '#f59e0b' : '#22c55e'
-                  }}>
-                    <AlertTriangle size={10} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.65rem', fontWeight: 900, color: event.impact === 'High' ? '#ef4444' : event.impact === 'Medium' ? '#f59e0b' : '#22c55e' }}>
+                    <AlertTriangle size={11} />
                     {IMPACT_LABELS[event.impact]}
                   </div>
                 </div>
-                
-                <div style={{ fontWeight: 850, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.015em', lineHeight: 1.3 }}>
+
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.3, letterSpacing: '-0.01em' }}>
                   {event.event}
                 </div>
 
                 {(event.forecast || event.previous) && (
-                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {event.forecast && <span>예측 <b style={{ color: 'var(--text-primary)', fontWeight: 1000, marginLeft: '0.2rem' }}>{event.forecast}</b></span>}
-                    {event.previous && <span>이전 <b style={{ color: 'var(--text-primary)', fontWeight: 1000, marginLeft: '0.2rem' }}>{event.previous}</b></span>}
+                  <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    {event.forecast && <span>예측 <b style={{ color: 'var(--text-primary)', fontWeight: 900, marginLeft: '0.15rem' }}>{event.forecast}</b></span>}
+                    {event.previous && <span>이전 <b style={{ color: 'var(--text-primary)', fontWeight: 900, marginLeft: '0.15rem' }}>{event.previous}</b></span>}
                   </div>
                 )}
               </motion.div>
 
-              {showNowLineAfter && (
-                <NowTimelineMarker />
-              )}
+              {showNowLineAfter && <NowTimelineMarker />}
             </React.Fragment>
           );
         })}

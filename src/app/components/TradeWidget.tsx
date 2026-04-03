@@ -117,8 +117,8 @@ export default function TradeWidget() {
           <span style={{ textAlign: 'right' }}>Balance</span>
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxHeight: '380px', overflowY: 'auto', scrollbarWidth: 'none' }}>
-          {data.countries.map((c: any, i: number) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxHeight: '180px', overflowY: 'auto', scrollbarWidth: 'none' }}>
+          {data.countries.slice(0, 5).map((c: any, i: number) => (
             <CountryTradeRow key={c.code} c={c} i={i} maxExport={maxExport} />
           ))}
         </div>

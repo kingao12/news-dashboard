@@ -200,7 +200,8 @@ export default function MarketWidget() {
     { id: 'hynix', symbol: '000660', name: 'SK하이닉스', current_price: 0 },
     { id: 'lgensol', symbol: '373220', name: 'LG에너지솔루션', current_price: 0 },
     { id: 'biologics', symbol: '207940', name: '삼성바이오로직스', current_price: 0 },
-    { id: 'hyundai', symbol: '005380', name: '현대차', current_price: 0 },
+    { id: 'hyundai', symbol: '005380', name: '현대차', price: 0 },
+    { id: 'naver', symbol: '035420', name: '네이버', price: 0 },
   ]);
   const [overseasRanking, setOverseasRanking] = useState<any[]>([
     { id: 'aapl', symbol: 'AAPL', name: 'Apple', current_price: 0 },
@@ -341,34 +342,33 @@ export default function MarketWidget() {
         ))}
       </div>
 
-      <div className={styles.chartSection} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
+      <div className={styles.chartSection} style={{ display: 'flex', flexDirection: 'column', minHeight: '600px', flex: '1 0 auto' }}>
         {isLoading && !data ? (
-          <div style={{ padding: '2rem' }}><WidgetSkeleton /></div>
+          <div style={{ padding: '1rem' }}><WidgetSkeleton /></div>
         ) : error ? (
           <div className={styles.widgetError}>데이터를 불러올 수 없습니다.</div>
         ) : data?.chart ? (
           <>
-            <div className={styles.cryptoHeader} style={{ marginBottom: '1rem' }}>
+            <div className={styles.cryptoHeader} style={{ marginBottom: '0.4rem', padding: '0 0.5rem' }}>
               <div className={styles.cryptoPrice}>
                 <AssetLogo src={data.chart.image} symbol={data.chart.symbol} size={28} />
-                <span className={styles.symbol} style={{ fontSize: '1rem', marginLeft: '0.6rem' }}>{data.chart.symbol} ({interval})</span>
-                <span className={styles.price} style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <span className={styles.symbol} style={{ fontSize: '0.9rem', marginLeft: '0.4rem' }}>{data.chart.symbol}</span>
+                <span className={styles.price} style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   {activeTab === 'crypto' ? (
-                    <LivePrice basePrice={data.chart.price} symbol={data.chart.symbol} minWidth="200px" />
+                    <LivePrice basePrice={data.chart.price} symbol={data.chart.symbol} minWidth="150px" />
                   ) : (
-                    <span style={{ minWidth: '200px', textAlign: 'right' }}>
+                    <span style={{ minWidth: '150px', textAlign: 'right' }}>
                       {activeTab === 'domestic' ? '₩' : '$'}{data.chart.price.toLocaleString()}
                     </span>
                   )}
                 </span>
               </div>
-              <div className={`${styles.cryptoChangeBadge} ${data.chart.change >= 0 ? styles.plusBg : styles.minusBg}`} style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
-                <div className={styles.livePulse} style={{ width: '8px', height: '8px', backgroundColor: data.chart.change >= 0 ? '#22c55e' : '#ef4444' }} />
+              <div className={`${styles.cryptoChangeBadge} ${data.chart.change >= 0 ? styles.plusBg : styles.minusBg}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}>
                 {data.chart.change.toFixed(2)}%
               </div>
             </div>
             
-            <div style={{ flex: 1, width: '100%', position: 'relative', minHeight: '500px' }}>
+            <div style={{ flex: 1, width: '100%', position: 'relative', minHeight: '550px', borderRadius: '8px', overflow: 'hidden' }}>
               <TradingViewChart 
                 symbol={getCurrentSymbol()} 
                 theme={isDark ? 'dark' : 'light'} 
@@ -382,7 +382,7 @@ export default function MarketWidget() {
         )}
       </div>
 
-      <div className={styles.rankingList} style={{ maxHeight: '200px' }}>
+      <div className={styles.rankingList} style={{ minHeight: '120px', maxHeight: '180px', overflowY: 'auto', marginTop: '0.5rem' }}>
         {(activeTab === 'crypto' ? cryptoRanking : (activeTab === 'domestic' ? domesticRanking : overseasRanking)).map((item: any, idx: number) => (
           <div key={item.id || item.symbol} className={styles.rankingItem} onClick={() => handleRankingClick(item)}>
             <div className={styles.rankInfo}>

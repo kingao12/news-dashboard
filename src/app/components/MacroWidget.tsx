@@ -95,52 +95,46 @@ export default function MacroWidget() {
       animate={{ opacity: 1, y: 0 }}
       className={styles.widgetPanel}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
-        <Globe size={20} className="live-indicator" style={{ color: 'var(--accent-primary)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
+        <Globe size={18} className="live-indicator" style={{ color: 'var(--accent-primary)' }} />
         <h3 className={styles.widgetHeader} style={{ margin: 0 }}>글로벌 매크로 터미널</h3>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1rem' }}>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🌐 전 세계 인구</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', marginBottom: '0.8rem' }}>
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🌐 전 세계 인구</div>
           <LiveMacroValue baseValue={data.population.WORLD} suffix="명" />
-          <p className={styles.macroSub}>초당 +2.5명</p>
         </div>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🇺🇸 미국 GDP</div>
-          <LiveMacroValue baseValue={data.gdp.US / 1e12} prefix="$" suffix="T" decimals={5} />
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🇺🇸 미국 GDP</div>
+          <LiveMacroValue baseValue={data.gdp.US / 1e12} prefix="$" suffix="T" decimals={2} />
         </div>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🇨🇳 중국 GDP</div>
-          <LiveMacroValue baseValue={data.gdp.CN / 1e12} prefix="$" suffix="T" decimals={5} />
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🇨🇳 중국 GDP</div>
+          <LiveMacroValue baseValue={data.gdp.CN / 1e12} prefix="$" suffix="T" decimals={2} />
         </div>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🇯🇵 일본 GDP</div>
-          <LiveMacroValue baseValue={data.gdp.JP / 1e12} prefix="$" suffix="T" decimals={5} />
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🇯🇵 일본 GDP</div>
+          <LiveMacroValue baseValue={data.gdp.JP / 1e12} prefix="$" suffix="T" decimals={2} />
         </div>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🇰🇷 한국 GDP</div>
-          <LiveMacroValue baseValue={data.gdp.KR / 1e12} prefix="$" suffix="T" decimals={5} />
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🇰🇷 한국 GDP</div>
+          <LiveMacroValue baseValue={data.gdp.KR / 1e12} prefix="$" suffix="T" decimals={2} />
         </div>
-        <div className={styles.macroBox}>
-          <div className={styles.macroLabel}>🇪🇺 유럽 GDP</div>
-          <LiveMacroValue baseValue={data.gdp.EU / 1e12} prefix="$" suffix="T" decimals={5} />
-        </div>
-        <div className={styles.macroBox} style={{ gridColumn: 'span 3' }}>
-          <div className={styles.macroLabel}>📈 글로벌 인플레이션 (CPI 가중평균)</div>
-          <LiveMacroValue baseValue={3.2} suffix="%" decimals={1} />
-          <p className={styles.macroSub}>주요국 가중평균치</p>
+        <div className={styles.macroBox} style={{ padding: '0.6rem' }}>
+          <div className={styles.macroLabel} style={{ fontSize: '0.6rem' }}>🇪🇺 유럽 GDP</div>
+          <LiveMacroValue baseValue={data.gdp.EU / 1e12} prefix="$" suffix="T" decimals={2} />
         </div>
       </div>
 
       <div className={styles.chartsGrid}>
         <div className={styles.chartContainer}>
-          <div className={styles.chartHeader}>국가별 GDP 비교 (단위: $T)</div>
-          <ResponsiveContainer width="100%" height={130}>
+          <div className={styles.chartHeader} style={{ fontSize: '0.75rem', marginBottom: '0.2rem' }}>국가별 GDP ($T)</div>
+          <ResponsiveContainer width="100%" height={120}>
             <BarChart data={gdpData.map(d => ({ ...d, value: d.value / 1000000000000 }))} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} />
-              <XAxis dataKey="country" tick={{ fill: axisColor, fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: axisColor, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(0)}T`} />
+              <XAxis dataKey="country" tick={{ fill: axisColor, fontSize: 9, fontWeight: 600 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: axisColor, fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(0)}T`} />
               <Tooltip
                 cursor={{ fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}
                 contentStyle={{ 

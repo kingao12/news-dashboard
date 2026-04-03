@@ -20,8 +20,8 @@ const GaugeArc = ({ value }: { value: number }) => {
   const color = value <= 20 ? '#ef4444' : value <= 40 ? '#f97316' : value <= 60 ? '#eab308' : value <= 80 ? '#22c55e' : '#10b981';
 
   return (
-    <div style={{ position: 'relative', width: '130px', height: '110px' }}>
-      <svg width="130" height="110" viewBox="0 0 130 120" style={{ overflow: 'visible' }}>
+    <div style={{ position: 'relative', width: '100px', height: '80px' }}>
+      <svg width="100" height="80" viewBox="0 0 130 120" style={{ overflow: 'visible' }}>
         <circle cx="65" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="12"
           strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
           strokeDashoffset={circumference * 0.375} strokeLinecap="round" />
@@ -33,15 +33,15 @@ const GaugeArc = ({ value }: { value: number }) => {
           strokeDashoffset={circumference * 0.375} strokeLinecap="round"
           style={{ filter: `drop-shadow(0 0 8px ${color}44)` }} />
       </svg>
-      <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+      <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
         <motion.div 
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          style={{ fontSize: '1.8rem', fontWeight: 950, color: color, fontFamily: 'var(--font-mono)', lineHeight: 1 }}
+          style={{ fontSize: '1.4rem', fontWeight: 950, color: color, fontFamily: 'var(--font-mono)', lineHeight: 1 }}
         >
           {value}
         </motion.div>
-        <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginTop: '2px' }}>SCORE</div>
+        <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#64748b', marginTop: '1px' }}>SCORE</div>
       </div>
     </div>
   );
@@ -96,12 +96,12 @@ export default function SentimentWidget() {
       animate={{ opacity: 1, y: 0 }}
       className={styles.widgetPanel}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <ShieldAlert size={18} style={{ color: 'var(--accent-primary)' }} />
-          <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>센티멘트 터미널</h3>
+          <ShieldAlert size={16} style={{ color: 'var(--accent-primary)' }} />
+          <h3 className={styles.widgetHeader} style={{ marginBottom: 0, fontSize: '1rem' }}>센티멘트 터미널</h3>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.6rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
           <div className="live-indicator" style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
           실시간 데이터
         </div>
@@ -109,38 +109,35 @@ export default function SentimentWidget() {
 
       <div style={{ 
         background: 'var(--bg-glass)', 
-        borderRadius: '16px', 
+        borderRadius: '12px', 
         border: '1px solid var(--border-glass)', 
-        padding: '1.25rem',
-        marginBottom: '1rem',
+        padding: '0.7rem 1rem',
+        marginBottom: '0.5rem',
         display: 'flex',
         alignItems: 'center',
-        gap: '1.5rem',
+        gap: '1rem',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <div style={{ position: 'absolute', top: 0, right: 0, padding: '0.5rem', opacity: 0.1 }}>
-          <Zap size={40} />
-        </div>
         <GaugeArc value={crypto.value} />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 900, marginBottom: '0.2rem', letterSpacing: '0.05em' }}>CRYPTO SENTIMENT</div>
+          <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 900, marginBottom: '0.15rem', letterSpacing: '0.05em' }}>CRYPTO SENTIMENT</div>
           <motion.div 
             key={crypto.label}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            style={{ fontSize: '1.4rem', fontWeight: 950, color: cryptoColor, letterSpacing: '-0.02em' }}
+            style={{ fontSize: '1.2rem', fontWeight: 950, color: cryptoColor, letterSpacing: '-0.02em' }}
           >
             {crypto.label}
           </motion.div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.2rem 0.4rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
-              {crypto.change > 0 ? <TrendingUp size={12} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={12} color="#ef4444" /> : <Minus size={12} color="#94a3b8" />}
-              <span style={{ fontSize: '0.75rem', color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.15rem 0.35rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+              {crypto.change > 0 ? <TrendingUp size={10} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={10} color="#ef4444" /> : <Minus size={10} color="#94a3b8" />}
+              <span style={{ fontSize: '0.7rem', color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                 {crypto.change > 0 ? '+' : ''}{crypto.change}P
               </span>
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>
               VIX: <span style={{ color: 'var(--text-primary)' }}>{data.vix}</span>
             </div>
           </div>
@@ -149,16 +146,15 @@ export default function SentimentWidget() {
 
       <div style={{ 
         background: 'var(--bg-glass)', 
-        borderRadius: '16px', 
+        borderRadius: '12px', 
         border: '1px solid var(--border-glass)', 
-        padding: '1.25rem'
+        padding: '0.7rem 1rem'
       }}>
-        <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 900, marginBottom: '1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 900, marginBottom: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           Global Equity Markets
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
           <MiniBar label="GLOBAL" value={data.stocks.global.value} />
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.03)', margin: '0.4rem 0' }} />
           <MiniBar label="USA" value={data.stocks.global.value} />
           <MiniBar label="KOREA" value={data.stocks.korea.value} />
           <MiniBar label="JAPAN" value={data.stocks.japan.value} />
