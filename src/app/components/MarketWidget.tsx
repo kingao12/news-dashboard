@@ -189,12 +189,26 @@ const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string, symbol: stri
 AssetLogo.displayName = 'AssetLogo';
 
 export default function MarketWidget() {
-  const [activeTab, setActiveTab] = useState<'crypto' | 'stocks'>('crypto');
+  const [activeTab, setActiveTab] = useState<'crypto' | 'domestic' | 'overseas'>('crypto');
   const [cryptoSymbol, setCryptoSymbol] = useState('BTC');
-  const [stockSymbol, setStockSymbol] = useState('AAPL');
+  const [domesticSymbol, setDomesticSymbol] = useState('005930'); // 삼성전자
+  const [overseasSymbol, setOverseasSymbol] = useState('AAPL');
   const [interval, setIntervalVal] = useState('1m');
   const [cryptoRanking, setCryptoRanking] = useState<any[]>([]);
-  const [stockRanking, setStockRanking] = useState<any[]>([]);
+  const [domesticRanking, setDomesticRanking] = useState<any[]>([
+    { id: 'samsung', symbol: '005930', name: '삼성전자', current_price: 0 },
+    { id: 'hynix', symbol: '000660', name: 'SK하이닉스', current_price: 0 },
+    { id: 'lgensol', symbol: '373220', name: 'LG에너지솔루션', current_price: 0 },
+    { id: 'biologics', symbol: '207940', name: '삼성바이오로직스', current_price: 0 },
+    { id: 'hyundai', symbol: '005380', name: '현대차', current_price: 0 },
+  ]);
+  const [overseasRanking, setOverseasRanking] = useState<any[]>([
+    { id: 'aapl', symbol: 'AAPL', name: 'Apple', current_price: 0 },
+    { id: 'nvda', symbol: 'NVDA', name: 'NVIDIA', current_price: 0 },
+    { id: 'msft', symbol: 'MSFT', name: 'Microsoft', current_price: 0 },
+    { id: 'googl', symbol: 'GOOGL', name: 'Alphabet', current_price: 0 },
+    { id: 'tsla', symbol: 'TSLA', name: 'Tesla', current_price: 0 },
+  ]);
   
   // Theme awareness for chart colors
   const [isDark, setIsDark] = useState(true);
@@ -208,7 +222,8 @@ export default function MarketWidget() {
   }, []);
 
   const cryptoEndpoint = `/api/crypto?symbol=${cryptoSymbol}&interval=${interval}`;
-  const stockEndpoint = `/api/stocks?symbol=${stockSymbol}&interval=${interval}`;
+  const domesticEndpoint = `/api/stocks?symbol=${domesticSymbol}&interval=${interval}&market=kr`;
+  const overseasEndpoint = `/api/stocks?symbol=${overseasSymbol}&interval=${interval}&market=us`;
     
   const { data: cryptoData, error: cryptoError, isLoading: cryptoLoading } = useSWR(cryptoEndpoint, fetcher, { 
     keepPreviousData: true,
@@ -216,20 +231,25 @@ export default function MarketWidget() {
     refreshInterval: activeTab === 'crypto' && interval === '1m' ? 3000 : 30000 
   });
 
-  const { data: stockData, error: stockError, isLoading: stockLoading } = useSWR(stockEndpoint, fetcher, { 
+  const { data: domesticData, error: domesticError, isLoading: domesticLoading } = useSWR(activeTab === 'domestic' ? domesticEndpoint : null, fetcher, { 
     keepPreviousData: true,
     revalidateOnFocus: false,
-    refreshInterval: activeTab === 'stocks' && interval === '1m' ? 3000 : 30000 
+    refreshInterval: interval === '1m' ? 5000 : 60000 
   });
 
-  // Binance WebSocket 실시간 가격 스트림 관리 (throttle 적용)
+  const { data: overseasData, error: overseasError, isLoading: overseasLoading } = useSWR(activeTab === 'overseas' ? overseasEndpoint : null, fetcher, { 
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+    refreshInterval: interval === '1m' ? 5000 : 60000 
+  });
+
+  // Binance WebSocket 실시간 가격 스트림 관리 (crypto 전용)
   useEffect(() => {
     if (activeTab !== 'crypto') return;
 
     let ws: WebSocket | null = null;
-    // rAF 기반 삭대로 throttle: 한 프레임에 한 번만 dispatch
     let rafId: number | null = null;
-    const batch = new Map<string, number>(); // symbol → latest price
+    const batch = new Map<string, number>();
 
     const flush = () => {
       batch.forEach((price, symbol) => {
@@ -240,20 +260,16 @@ export default function MarketWidget() {
     };
 
     const connectWS = () => {
-      // 바이낸스 선물(Futures) 가격 스트림으로 연결 (트레이딩뷰 값과 일치)
       ws = new WebSocket('wss://fstream.binance.com/ws/!miniTicker@arr');
-
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (Array.isArray(data)) {
           data.forEach(ticker => {
             batch.set(ticker.s.replace('USDT', ''), parseFloat(ticker.c));
           });
-          // 아직 예약된 rAF가 없으면 등록
           if (rafId === null) rafId = requestAnimationFrame(flush);
         }
       };
-
       ws.onclose = () => setTimeout(connectWS, 3000);
     };
 
@@ -265,52 +281,56 @@ export default function MarketWidget() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (cryptoData?.marketCapList) {
-      setCryptoRanking(cryptoData.marketCapList);
-    }
+    if (cryptoData?.marketCapList) setCryptoRanking(cryptoData.marketCapList);
   }, [cryptoData]);
 
   useEffect(() => {
-    if (stockData?.marketCapList) {
-      setStockRanking(stockData.marketCapList);
-    }
-  }, [stockData]);
+    if (domesticData?.marketCapList) setDomesticRanking(domesticData.marketCapList);
+  }, [domesticData]);
 
-  const data = activeTab === 'crypto' ? cryptoData : stockData;
-  const isLoading = activeTab === 'crypto' ? cryptoLoading : stockLoading;
-  const error = activeTab === 'crypto' ? cryptoError : stockError;
+  useEffect(() => {
+    if (overseasData?.marketCapList) setOverseasRanking(overseasData.marketCapList);
+  }, [overseasData]);
 
-  const handleTabChange = useCallback((tab: 'crypto' | 'stocks') => {
+  const data = activeTab === 'crypto' ? cryptoData : (activeTab === 'domestic' ? domesticData : overseasData);
+  const isLoading = activeTab === 'crypto' ? cryptoLoading : (activeTab === 'domestic' ? domesticLoading : overseasLoading);
+  const error = activeTab === 'crypto' ? cryptoError : (activeTab === 'domestic' ? domesticError : overseasError);
+
+  const handleTabChange = useCallback((tab: 'crypto' | 'domestic' | 'overseas') => {
     setActiveTab(tab);
   }, []);
 
-
   const handleRankingClick = useCallback((item: any) => {
-    if (activeTab === 'crypto') {
-      setCryptoSymbol(item.symbol);
-    } else {
-      setStockSymbol(item.symbol);
-    }
+    if (activeTab === 'crypto') setCryptoSymbol(item.symbol);
+    else if (activeTab === 'domestic') setDomesticSymbol(item.symbol);
+    else setOverseasSymbol(item.symbol);
   }, [activeTab]);
 
-  // TradingView 위젯으로 통합되어, 기존 ApexCharts 인디케이터 연산 코드 전체를 제거했습니다.
+  const getCurrentSymbol = () => {
+    if (activeTab === 'crypto') return cryptoSymbol;
+    if (activeTab === 'domestic') return `KRX:${domesticSymbol}`;
+    return `NASDAQ:${overseasSymbol}`;
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={styles.widgetPanel}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       <div className={styles.tabContainer}>
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <button onClick={() => handleTabChange('crypto')} className={`${styles.tabButton} ${activeTab === 'crypto' ? styles.tabButtonActive : ''}`}>
+        <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
+          <button onClick={() => handleTabChange('crypto')} className={`${styles.tabButton} ${activeTab === 'crypto' ? styles.tabButtonActive : ''}`} style={{ flex: 1 }}>
             <Coins size={14} /> 코인
           </button>
-          <button onClick={() => handleTabChange('stocks')} className={`${styles.tabButton} ${activeTab === 'stocks' ? styles.tabButtonActive : ''}`}>
-            <LineChart size={14} /> 주식
+          <button onClick={() => handleTabChange('domestic')} className={`${styles.tabButton} ${activeTab === 'domestic' ? styles.tabButtonActive : ''}`} style={{ flex: 1 }}>
+            <Activity size={14} /> 국내주식
+          </button>
+          <button onClick={() => handleTabChange('overseas')} className={`${styles.tabButton} ${activeTab === 'overseas' ? styles.tabButtonActive : ''}`} style={{ flex: 1 }}>
+            <LineChart size={14} /> 해외주식
           </button>
         </div>
-        
       </div>
 
       <div className={styles.intervalBar}>
@@ -321,7 +341,7 @@ export default function MarketWidget() {
         ))}
       </div>
 
-      <div className={styles.chartSection} style={{ height: '800px', display: 'flex', flexDirection: 'column' }}>
+      <div className={styles.chartSection} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
         {isLoading && !data ? (
           <div style={{ padding: '2rem' }}><WidgetSkeleton /></div>
         ) : error ? (
@@ -333,7 +353,13 @@ export default function MarketWidget() {
                 <AssetLogo src={data.chart.image} symbol={data.chart.symbol} size={28} />
                 <span className={styles.symbol} style={{ fontSize: '1rem', marginLeft: '0.6rem' }}>{data.chart.symbol} ({interval})</span>
                 <span className={styles.price} style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  <LivePrice basePrice={data.chart.price} symbol={data.chart.symbol} minWidth="220px" />
+                  {activeTab === 'crypto' ? (
+                    <LivePrice basePrice={data.chart.price} symbol={data.chart.symbol} minWidth="200px" />
+                  ) : (
+                    <span style={{ minWidth: '200px', textAlign: 'right' }}>
+                      {activeTab === 'domestic' ? '₩' : '$'}{data.chart.price.toLocaleString()}
+                    </span>
+                  )}
                 </span>
               </div>
               <div className={`${styles.cryptoChangeBadge} ${data.chart.change >= 0 ? styles.plusBg : styles.minusBg}`} style={{ padding: '0.5rem 1rem', fontSize: '0.95rem' }}>
@@ -342,9 +368,9 @@ export default function MarketWidget() {
               </div>
             </div>
             
-            <div style={{ height: '850px', width: '100%', position: 'relative' }}>
+            <div style={{ flex: 1, width: '100%', position: 'relative', minHeight: '500px' }}>
               <TradingViewChart 
-                symbol={activeTab === 'crypto' ? cryptoSymbol : stockSymbol} 
+                symbol={getCurrentSymbol()} 
                 theme={isDark ? 'dark' : 'light'} 
                 interval={interval} 
                 isCrypto={activeTab === 'crypto'}
@@ -356,26 +382,26 @@ export default function MarketWidget() {
         )}
       </div>
 
-      <div className={styles.rankingList}>
-        {(activeTab === 'crypto' ? cryptoRanking : stockRanking).map((item: any, idx: number) => (
-          <div key={item.id} className={styles.rankingItem} onClick={() => handleRankingClick(item)}>
+      <div className={styles.rankingList} style={{ maxHeight: '200px' }}>
+        {(activeTab === 'crypto' ? cryptoRanking : (activeTab === 'domestic' ? domesticRanking : overseasRanking)).map((item: any, idx: number) => (
+          <div key={item.id || item.symbol} className={styles.rankingItem} onClick={() => handleRankingClick(item)}>
             <div className={styles.rankInfo}>
               <span className={styles.rankIndex}>{idx + 1}</span>
               <AssetLogo src={item.image} symbol={item.symbol} size={22} />
               <span className={styles.rankSymbol}>{item.symbol}</span>
+              <span className={styles.rankName} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'none' }}>{item.name}</span>
             </div>
             <div className={styles.rankPriceCol}>
               <div className={styles.rankPrice}>
-                <LivePrice basePrice={item.current_price} symbol={item.symbol} />
+                {activeTab === 'crypto' ? (
+                  <LivePrice basePrice={item.current_price} symbol={item.symbol} />
+                ) : (
+                  <span>{activeTab === 'domestic' ? '₩' : '$'}{item.current_price?.toLocaleString() || '---'}</span>
+                )}
               </div>
             </div>
           </div>
         ))}
-        {(activeTab === 'crypto' ? cryptoRanking : stockRanking).length === 0 && !isLoading && (
-          <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
-             리스트를 불러올 수 없습니다.
-          </div>
-        )}
       </div>
     </motion.div>
   );
