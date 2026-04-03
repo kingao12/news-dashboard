@@ -2,10 +2,10 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-glass);
   border-radius: 16px;
-  padding: 0.75rem 1rem;
+  padding: 0.3rem 0.3rem;
   backdrop-filter: blur(var(--blur-amount));
   -webkit-backdrop-filter: blur(var(--blur-amount));
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
@@ -50,11 +50,12 @@
   white-space: nowrap;
 }
 
-.dropdownSwitch:hover, .dropdownSwitchActive {
+.dropdownSwitch:hover,
+.dropdownSwitchActive {
   background: var(--bg-glass);
   border-color: var(--border-glass);
   color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dropdownIcon {
@@ -74,7 +75,8 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  background: var(--bg-primary); /* 불투명한 기본 배경색 사용 */
+  background: var(--bg-primary);
+  /* 불투명한 기본 배경색 사용 */
   border: 1px solid var(--border-glass);
   border-radius: 16px;
   padding: 0.75rem;
@@ -82,7 +84,7 @@
   max-height: 400px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -98,7 +100,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 0 0.4rem 0.2rem 0.4rem;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .menuGrid {
@@ -116,7 +118,7 @@
 .separator {
   width: 1px;
   height: 18px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   margin: 0 0.2rem;
 }
 
@@ -137,7 +139,7 @@
 }
 
 .dropdownItem:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
   transform: translateX(2px);
 }
@@ -168,7 +170,7 @@
 .viewToggle {
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-glass);
   border-radius: 10px;
   padding: 3px;
@@ -194,7 +196,7 @@
 
 .viewToggleBtn:hover {
   color: var(--text-primary);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .viewToggleActive {
@@ -220,6 +222,11 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

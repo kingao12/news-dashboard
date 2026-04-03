@@ -30,7 +30,7 @@ declare global {
   }
 }
 
-const CHART_HEIGHT = 900;
+const CHART_HEIGHT = 300;
 
 const TradingViewChart = memo(
   ({

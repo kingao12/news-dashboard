@@ -99,7 +99,7 @@ GlobalClockTicker.displayName = 'GlobalClockTicker';
 
 const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
   if (!news || news.length === 0) return null;
-  
+
   return (
     <div className="ticker-wrap glass-panel" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, margin: '0 -2rem' }}>
       <div style={{ display: 'flex', animation: 'ticker 30s linear infinite' }}>
@@ -167,7 +167,7 @@ export default function Dashboard() {
       const res = await fetch(`/api/news?category=${c}&topic=${t}&page=${p}`);
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
-      
+
       setLatency(Date.now() - startTime);
       // ID 배열로 경량 비교 (JSON.stringify 대비 훨씬 빠름)
       const items: NewsItem[] = data.items || [];
@@ -203,48 +203,48 @@ export default function Dashboard() {
 
   return (
     <main className={styles.dashboard} data-theme={theme}>
-        <div className={styles.headerLayout}>
-          <div className={styles.brandSection}>
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={styles.liveBadge}
-            >
-              <Zap size={10} fill="currentColor" />
-              실시간 글로벌 터미널
-            </motion.div>
-            <h1 className={styles.title}>글로벌 마켓 <span className="gradient-text">터미널</span></h1>
-            <p className={styles.subtitle}>실시간 거시경제·퀀트 및 크립토 데이터 스트림</p>
-          </div>
-
-          <div className={styles.clockIntegrateSection}>
-            <div className={styles.clockLabelTag}>
-               <Clock size={10} /> 세계 시간
-            </div>
-            <GlobalClockTicker />
-          </div>
-
-          <div className={styles.headerActions}>
-            <button
-              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-              className={styles.themeToggleBtn}
-              aria-label="Toggle theme"
-            >
-              <div className={styles.themeBtnIcon}>
-                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-              </div>
-              <span className={styles.themeBtnLabel}>
-                {theme === 'light' ? '다크 모드' : '라이트 모드'}
-              </span>
-            </button>
-          </div>
+      <div className={styles.headerLayout}>
+        <div className={styles.brandSection}>
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={styles.liveBadge}
+          >
+            <Zap size={10} fill="currentColor" />
+            실시간 글로벌 터미널
+          </motion.div>
+          <h2 className={styles.title}>글로벌 마켓 <span className="gradient-text">터미널</span></h2>
+          <p className={styles.subtitle}>실시간 거시경제·퀀트 및 크립토 데이터 스트림</p>
         </div>
+
+        <div className={styles.clockIntegrateSection}>
+          <div className={styles.clockLabelTag}>
+            <Clock size={10} /> 세계 시간
+          </div>
+          <GlobalClockTicker />
+        </div>
+
+        <div className={styles.headerActions}>
+          <button
+            onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+            className={styles.themeToggleBtn}
+            aria-label="Toggle theme"
+          >
+            <div className={styles.themeBtnIcon}>
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            </div>
+            <span className={styles.themeBtnLabel}>
+              {theme === 'light' ? '다크 모드' : '라이트 모드'}
+            </span>
+          </button>
+        </div>
+      </div>
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--bg-primary)' }}>
         <BreakingNewsTicker news={news.slice(0, 10)} />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
@@ -274,21 +274,21 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-            <motion.div
-              layout
-              className={viewMode === 'list' ? styles.newsGridList : styles.newsGrid}
-            >
-              <AnimatePresence mode="sync">
-                {news.map((item) => (
-                  <NewsCard
-                    key={item.id}
-                    item={item}
-                    onClick={(item) => setSelectedNews(item)}
-                    isListMode={viewMode === 'list'}
-                  />
-                ))}
-              </AnimatePresence>
-            </motion.div>
+              <motion.div
+                layout
+                className={viewMode === 'list' ? styles.newsGridList : styles.newsGrid}
+              >
+                <AnimatePresence mode="sync">
+                  {news.map((item) => (
+                    <NewsCard
+                      key={item.id}
+                      item={item}
+                      onClick={(item) => setSelectedNews(item)}
+                      isListMode={viewMode === 'list'}
+                    />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
 
               {totalPages > 1 && (
                 <div className={styles.pagination}>
@@ -310,19 +310,19 @@ export default function Dashboard() {
 
         <div className={styles.widgetSection}>
           <div className={styles.widgetTabs}>
-            <button 
+            <button
               onClick={() => setActiveTab('market')}
               className={`${styles.widgetTabBtn} ${activeTab === 'market' ? styles.widgetTabBtnActive : ''}`}
             >
               <Activity size={14} /> <span>마켓</span>
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('macro')}
               className={`${styles.widgetTabBtn} ${activeTab === 'macro' ? styles.widgetTabBtnActive : ''}`}
             >
               <Globe size={14} /> <span>거시경제</span>
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('flow')}
               className={`${styles.widgetTabBtn} ${activeTab === 'flow' ? styles.widgetTabBtnActive : ''}`}
             >
@@ -336,13 +336,13 @@ export default function Dashboard() {
               <MarketWidget />
               <SentimentWidget />
             </div>
-            
+
             <div className={styles.tabPanel} style={{ display: activeTab === 'macro' ? 'flex' : 'none' }}>
               <EconomicCalendar />
               <MacroWidget />
               <TradeWidget />
             </div>
-            
+
             <div className={styles.tabPanel} style={{ display: activeTab === 'flow' ? 'flex' : 'none' }}>
               <WhaleTradesWidget />
               <CryptoVolumeWidget />
@@ -377,9 +377,9 @@ export default function Dashboard() {
         </div>
       </footer>
 
-      <NewsDrawer 
-        item={selectedNews} 
-        onClose={() => setSelectedNews(null)} 
+      <NewsDrawer
+        item={selectedNews}
+        onClose={() => setSelectedNews(null)}
       />
     </main>
   );
