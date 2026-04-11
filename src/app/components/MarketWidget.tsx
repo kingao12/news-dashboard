@@ -179,6 +179,11 @@ const LivePrice = ({
         const data = JSON.parse(event.data);
         const newPrice = parseFloat(data.c);
         if (newPrice !== prevPrice.current) {
+          // Dispatch event for other listeners (like the ranking list)
+          window.dispatchEvent(new CustomEvent('market-asset-price-update', { 
+            detail: { symbol: symbol.toUpperCase(), price: newPrice } 
+          }));
+          
           setFlashClass(newPrice > prevPrice.current ? 'price-flash-up' : 'price-flash-down');
           setPrice(newPrice);
           prevPrice.current = newPrice;
@@ -216,9 +221,13 @@ const LivePrice = ({
     }
   }, [basePrice]);
 
-  const displayPrice = showDual && currency === '$' 
+  const primaryPrice = currency === '$' 
+    ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` 
+    : formatKRW(price);
+  
+  const secondaryPrice = showDual && currency === '$' 
     ? formatKRW(Math.floor(price * usdKrw)) 
-    : currency === '$' ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(price);
+    : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
@@ -230,12 +239,12 @@ const LivePrice = ({
           </div>
         )}
         <span className={`${flashClass} tabular-nums`} style={{ fontSize: '1.4rem', fontWeight: 1000, transition: 'color 0.4s ease' }}>
-          {displayPrice}
+          {primaryPrice}
         </span>
       </div>
-      {showDual && currency === '$' && (
+      {secondaryPrice && (
         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-          ${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          {secondaryPrice}
         </span>
       )}
     </div>
@@ -257,6 +266,55 @@ const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string; symbol: stri
 });
 
 AssetLogo.displayName = 'AssetLogo';
+
+const RankingLivePrice = memo(({ basePrice, symbol, currency = '$', usdKrw = 1 }: { 
+  basePrice: number; 
+  symbol: string; 
+  currency?: string; 
+  usdKrw?: number;
+}) => {
+  const [price, setPrice] = useState(basePrice);
+  const [flashClass, setFlashClass] = useState('');
+  const prevPrice = useRef(basePrice);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customE = e as CustomEvent;
+      if (customE.detail?.symbol === symbol.toUpperCase()) {
+        const newPrice = customE.detail.price;
+        if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
+        else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
+        setPrice(newPrice);
+        prevPrice.current = newPrice;
+        setTimeout(() => setFlashClass(''), 800);
+      }
+    };
+    window.addEventListener('market-asset-price-update', handler);
+    return () => window.removeEventListener('market-asset-price-update', handler);
+  }, [symbol]);
+
+  useEffect(() => {
+    if (basePrice !== price && Math.abs(basePrice - price) / basePrice > 0.05) {
+      setPrice(basePrice);
+      prevPrice.current = basePrice;
+    }
+  }, [basePrice]);
+
+  return (
+    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+      <span className={`${flashClass} tabular-nums`} style={{ fontSize: '0.85rem', fontWeight: 900, transition: 'color 0.4s ease' }}>
+        {currency === '$' ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(price)}
+      </span>
+      {currency === '$' && (
+        <span className="tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+          {formatKRW(Math.floor(price * usdKrw))}
+        </span>
+      )}
+    </div>
+  );
+});
+
+RankingLivePrice.displayName = 'RankingLivePrice';
 
 // --- Sparkline Component (Trend Line) ---
 const Sparkline = memo(({ change, width = 60, height = 24 }: { change: number; width?: number; height?: number }) => {
@@ -555,16 +613,12 @@ export default function MarketWidget() {
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <Sparkline change={item.price_change_percentage_24h} />
               </div>
-              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
-                <span className="tabular-nums" style={{ fontSize: '0.85rem', fontWeight: 900 }}>
-                  {activeTab === 'domestic' ? formatKRW(item.current_price) : `$${item.current_price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                </span>
-                {activeTab === 'crypto' && (
-                  <span className="tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                    {formatKRW(Math.floor(item.current_price * usdKrw))}
-                  </span>
-                )}
-              </div>
+              <RankingLivePrice 
+                basePrice={item.current_price} 
+                symbol={item.symbol} 
+                currency={activeTab === 'domestic' ? '₩' : '$'}
+                usdKrw={usdKrw}
+              />
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.7rem', fontWeight: 900, color: item.price_change_percentage_24h >= 0 ? '#10b981' : '#f43f5e' }}>
                   {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h.toFixed(2)}%
