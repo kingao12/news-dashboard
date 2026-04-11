@@ -99,6 +99,18 @@ const MoneyFlowSummary = memo(() => {
     setMounted(true);
   }, []);
 
+  // 모달 열림 시 배경 스크롤 방지 (Scroll Lock)
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen]);
+
   const currentFlows = useMemo(() => FLOW_DATA[activeTab] || [], [activeTab]);
   const currentInsight = useMemo(() => INSIGHTS[activeTab] || INSIGHTS.ASSET, [activeTab]);
 
@@ -116,7 +128,7 @@ const MoneyFlowSummary = memo(() => {
       {/* Badge View */}
       <button className={styles.badge} onClick={() => setIsModalOpen(true)}>
         <Flame size={12} className={styles.flameIcon} /> 
-        <span>글로벌 자본 집중도</span>
+        <span>자본 흐름도</span>
         <div className={styles.pulseDot} />
       </button>
 
@@ -173,7 +185,7 @@ const MoneyFlowSummary = memo(() => {
                     <Zap size={20} color="#f59e0b" fill="#f59e0b" />
                     <h2>Capital Flow Intelligence</h2>
                   </div>
-                  <p className={styles.modalDesc}>다차원 글로벌 자본 집중도 & 리스크 센티멘트 분석</p>
+                  <p className={styles.modalDesc}>다차원 글로벌 자본 흐름도 & 리스크 센티멘트 분석</p>
                 </div>
                 <button className={styles.closeBtn} onClick={() => setIsModalOpen(false)}><X size={24} /></button>
               </div>

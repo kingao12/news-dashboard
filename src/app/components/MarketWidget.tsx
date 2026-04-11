@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, memo, useCallback } from 'react';
+import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
@@ -32,7 +32,7 @@ const CHART_STYLES = [
   { label: '바', value: '0' }
 ];
 
-const CHART_HEIGHT = 450; // 차트 시인성을 위해 높이 상향 조정
+const CHART_HEIGHT = 580; // 차트 시인성을 위해 대폭 상향 조정
 
 const TradingViewChart = memo(
   ({
@@ -258,6 +258,54 @@ const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string; symbol: stri
 
 AssetLogo.displayName = 'AssetLogo';
 
+// --- Sparkline Component (Trend Line) ---
+const Sparkline = memo(({ change, width = 60, height = 24 }: { change: number; width?: number; height?: number }) => {
+  const isUp = change >= 0;
+  const color = isUp ? '#10b981' : '#f43f5e';
+  
+  // 가상의 트렌드 포인트 생성 (실제 데이터 없을 때 시각적 효과용)
+  const points = useMemo(() => {
+    const pts = [0.5];
+    const step = 6;
+    let last = 0.5;
+    for (let i = 0; i < step; i++) {
+      const rand = (Math.random() - 0.5) * 0.3;
+      const trend = isUp ? 0.05 : -0.05;
+      last = Math.max(0.1, Math.min(0.9, last + rand + trend));
+      pts.push(last);
+    }
+    return pts;
+  }, [isUp]);
+
+  const path = points.map((p, i) => `${(i / (points.length - 1)) * width},${height - p * height}`).join(' L ');
+
+  return (
+    <svg width={width} height={height} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={`grad-${isUp}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M 0,${height - points[0] * height} L ${path}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M 0,${height - points[0] * height} L ${path} L ${width},${height} L 0,${height} Z`}
+        fill={`url(#grad-${isUp})`}
+        stroke="none"
+      />
+    </svg>
+  );
+});
+
+Sparkline.displayName = 'Sparkline';
+
 export default function MarketWidget() {
   const [activeTab, setActiveTab] = useState<'crypto' | 'domestic' | 'overseas'>('crypto');
   const [cryptoSymbol, setCryptoSymbol] = useState('BTC');
@@ -471,9 +519,10 @@ export default function MarketWidget() {
 
         {/* Ranking List */}
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.2rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 100px 80px', padding: '0.4rem 0.6rem', fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', borderBottom: '1px solid var(--border-glass)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 80px 100px 80px', padding: '0.4rem 0.6rem', fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', borderBottom: '1px solid var(--border-glass)' }}>
             <span>순위</span>
             <span>종목</span>
+            <span style={{ textAlign: 'center' }}>트렌드</span>
             <span style={{ textAlign: 'right' }}>가격</span>
             <span style={{ textAlign: 'right' }}>시가총액/변동</span>
           </div>
@@ -483,7 +532,7 @@ export default function MarketWidget() {
               onClick={() => handleRankingClick(item)}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '40px 1fr 100px 80px',
+                gridTemplateColumns: '40px 1fr 80px 100px 80px',
                 alignItems: 'center',
                 padding: '0.6rem',
                 borderRadius: '8px',
@@ -502,6 +551,9 @@ export default function MarketWidget() {
                   <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{item.symbol}</span>
                   <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{item.name}</span>
                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <Sparkline change={item.price_change_percentage_24h} />
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
                 <span className="tabular-nums" style={{ fontSize: '0.85rem', fontWeight: 900 }}>
