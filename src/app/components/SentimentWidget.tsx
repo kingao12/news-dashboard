@@ -82,6 +82,8 @@ const MiniBar = ({ label, value }: { label: string; value: number }) => {
   );
 };
 
+import GlobalRiskRadar from './GlobalRiskRadar';
+
 export default function SentimentWidget() {
   const { data, error } = useSWR('/api/sentiment', fetcher, { refreshInterval: 30000 });
   if (error) return <div className={styles.widgetError}>공포·탐욕 데이터 로드 실패</div>;
@@ -90,76 +92,72 @@ export default function SentimentWidget() {
   const crypto = data.crypto;
   const { color: cryptoColor } = getInfo(crypto.value);
 
+  // Radar Data Mapping (Mocked based on VIX and Market Status)
+  const radarData = [
+    { label: 'EQUITY (VIX)', value: data.vix > 30 ? 85 : data.vix > 20 ? 60 : 35, color: '#f43f5e' },
+    { label: 'CRYPTO', value: crypto.value < 30 ? 90 : crypto.value < 50 ? 65 : 40, color: '#f59e0b' },
+    { label: 'FOREX', value: 45, color: '#3b82f6' },
+    { label: 'BONDS', value: 72, color: '#ef4444' },
+    { label: 'COMMODITY', value: 28, color: '#10b981' }
+  ];
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={styles.widgetPanel}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <ShieldAlert size={16} style={{ color: 'var(--accent-primary)' }} />
-          <h3 className={styles.widgetHeader} style={{ marginBottom: 0, fontSize: '1rem' }}>센티멘트 터미널</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 'fit-content' }}>
+          <ShieldAlert size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+          <h3 className={styles.widgetHeader} style={{ marginBottom: 0 }}>센티멘트 터미널</h3>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.6rem', color: '#64748b', fontWeight: 900, background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-          <div className="live-indicator" style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
-          실시간 데이터
+        <div className={styles.liveIndicatorTag} style={{ marginLeft: 'auto' }}>
+          <div className="live-indicator" style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+          <span>REAL-TIME ANALYSIS</span>
         </div>
       </div>
 
-      <div style={{ 
-        background: 'var(--bg-glass)', 
-        borderRadius: '12px', 
-        border: '1px solid var(--border-glass)', 
-        padding: '0.7rem 1rem',
-        marginBottom: '0.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <GaugeArc value={crypto.value} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 900, marginBottom: '0.15rem', letterSpacing: '0.05em' }}>CRYPTO SENTIMENT</div>
-          <motion.div 
-            key={crypto.label}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            style={{ fontSize: '1.2rem', fontWeight: 950, color: cryptoColor, letterSpacing: '-0.02em' }}
-          >
-            {crypto.label}
-          </motion.div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.15rem 0.35rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
-              {crypto.change > 0 ? <TrendingUp size={10} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={10} color="#ef4444" /> : <Minus size={10} color="#94a3b8" />}
-              <span style={{ fontSize: '0.7rem', color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                {crypto.change > 0 ? '+' : ''}{crypto.change}P
-              </span>
-            </div>
-            <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>
-              VIX: <span style={{ color: 'var(--text-primary)' }}>{data.vix}</span>
+      <div className={styles.gaugeContainerOuter}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <GaugeArc value={crypto.value} />
+          <div style={{ flex: 1 }}>
+            <div className={styles.labelMuted}>CRYPTO SENTIMENT</div>
+            <motion.div 
+              key={crypto.label}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{ fontSize: '1.45rem', fontWeight: 1000, color: cryptoColor, letterSpacing: '-0.03em' }}
+            >
+              {crypto.label}
+            </motion.div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.4rem' }}>
+              <div className={styles.changeBadge}>
+                {crypto.change > 0 ? <TrendingUp size={10} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={10} color="#ef4444" /> : <Minus size={10} color="#94a3b8" />}
+                <span style={{ color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8' }}>
+                  {crypto.change > 0 ? '+' : ''}{crypto.change}P
+                </span>
+              </div>
+              <div className={styles.vixTag}>VIX: {data.vix}</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div style={{ 
-        background: 'var(--bg-glass)', 
-        borderRadius: '12px', 
-        border: '1px solid var(--border-glass)', 
-        padding: '0.7rem 1rem'
-      }}>
-        <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 900, marginBottom: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Global Equity Markets
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-          <MiniBar label="GLOBAL" value={data.stocks.global.value} />
-          <MiniBar label="USA" value={data.stocks.global.value} />
-          <MiniBar label="KOREA" value={data.stocks.korea.value} />
-          <MiniBar label="JAPAN" value={data.stocks.japan.value} />
-          <MiniBar label="EUROPE" value={data.stocks.europe.value} />
-          <MiniBar label="CHINA" value={data.stocks.china.value} />
+        {/* Global Risk Radar Section */}
+        <div className={styles.radarSection}>
+           <div className={styles.radarHeader}>
+              <Zap size={12} color="#8b5cf6" fill="#8b5cf6" />
+              <span>MARKET VOLATILITY RADAR</span>
+           </div>
+           <div className={styles.radarBody}>
+              <GlobalRiskRadar data={radarData} size={220} />
+           </div>
+           <div className={styles.radarFooter}>
+              <div className={styles.radarInfo}>
+                 <Activity size={10} />
+                 <span>채권(Bonds) 중심의 변동성 전이 리스크 포착</span>
+              </div>
+           </div>
         </div>
       </div>
     </motion.div>

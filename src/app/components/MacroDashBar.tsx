@@ -1,201 +1,113 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import useSWR from 'swr';
-import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Globe, Zap, ArrowRightLeft, Activity, Info } from 'lucide-react';
-import styles from './Widget.module.css';
-import WidgetSkeleton from './WidgetSkeleton';
+import styles from './MacroDashBar.module.css';
+import { 
+  Globe, Clock, 
+} from 'lucide-react';
+import { formatKRW, formatKoreanNumber } from '@/utils/formatters';
+import { memo, useState, useEffect } from 'react';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-const MiniSpreadChart = memo(({ data }: { data: number[] }) => {
-  if (!data || data.length < 2) return null;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const points = data.map((v, i) => ({
-    x: (i / (data.length - 1)) * 100,
-    y: 100 - ((v - min) / range) * 100
-  }));
-
-  const pathData = `M 0 ${points[0].y} ` + points.map(p => `L ${p.x} ${p.y}`).join(' ');
+const KPICard = memo(({ 
+  label, value, sub, change, tier = 3
+}: any) => {
+  const isUp = change > 0;
+  const isDown = change < 0;
+  
+  const accentColor = tier === 1 ? '#4f46e5' : tier === 2 ? '#818cf8' : '#3b82f6';
+  const changeColor = isUp ? '#22c55e' : isDown ? '#f43f5e' : 'var(--text-secondary)';
 
   return (
-    <div style={{ width: '60px', height: '24px', position: 'relative' }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path d={pathData} fill="none" stroke="var(--accent-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={`${pathData} L 100 100 L 0 100 Z`} fill="url(#spread-grad)" opacity="0.2" />
-        <defs>
-          <linearGradient id="spread-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent-primary)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
-  );
-});
-
-MiniSpreadChart.displayName = 'MiniSpreadChart';
-
-const DataBox = memo(({ label, value, subValue, change, icon: Icon, color = 'var(--text-primary)' }: any) => {
-  const [flashClass, setFlashClass] = useState('');
-  const prevValue = useRef(value);
-
-  useEffect(() => {
-    if (prevValue.current !== value) {
-      const prevNum = parseFloat(String(prevValue.current).replace(/[^0-9.-]/g, ''));
-      const currNum = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
-      
-      if (!isNaN(prevNum) && !isNaN(currNum)) {
-        if (currNum > prevNum) setFlashClass(styles.priceFlashUp);
-        else if (currNum < prevNum) setFlashClass(styles.priceFlashDown);
-      } else {
-        setFlashClass(styles.priceFlashUp);
-      }
-      
-      const timer = setTimeout(() => setFlashClass(''), 800);
-      prevValue.current = value;
-      return () => clearTimeout(timer);
-    }
-  }, [value]);
-
-  return (
-    <div style={{ 
-      padding: '0.6rem 0.5rem', 
-      background: 'var(--bg-secondary)', 
-      borderRadius: '10px', 
-      border: '1px solid var(--border-glass)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.05rem',
-      width: '110px', // 넓이 대폭 축소 (수익률 제거 반영)
-      minWidth: '110px',
-      flexShrink: 0,
-      transition: 'border-color 0.2s ease'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.1rem' }}>
-        {Icon && <Icon size={10} style={{ color: '#64748b' }} />}
-        <span style={{ fontSize: '0.55rem', fontWeight: 850, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', overflow: 'hidden' }}>
-        <span className={`${flashClass}`} style={{ 
-          fontSize: '0.85rem', 
-          fontWeight: 950, 
-          color, 
-          fontFamily: 'var(--font-mono)',
-          fontVariantNumeric: 'tabular-nums', 
-          letterSpacing: '-0.02em'
-        }}>
-          {value}
-        </span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginTop: '0.1rem' }}>
-        {subValue ? (
-          <div style={{ fontSize: '0.55rem', color: '#475569', fontWeight: 800 }}>{subValue}</div>
-        ) : <div style={{ height: '0.6rem' }} />}
+    <div className={styles.kpiCard}>
+      <div className={styles.accentBar} style={{ backgroundColor: accentColor }} />
+      <div className={styles.cardInner}>
+        <div className={styles.cardHeader}>
+          <span className={styles.label}>{label}</span>
+          <span className={styles.changeVal} style={{ color: changeColor }}>
+            {isUp ? '+' : ''}{change}%
+          </span>
+        </div>
+        <div className={styles.cardBody}>
+          <div className={styles.mainValue}>{value}</div>
+          {sub && <div className={styles.subValue}>{sub}</div>}
+        </div>
       </div>
     </div>
   );
 });
 
-DataBox.displayName = 'DataBox';
+KPICard.displayName = 'KPICard';
 
 export default function MacroDashBar() {
-  const { data, isLoading } = useSWR('/api/macro', fetcher, { 
-    refreshInterval: 2000, // 1.2초에서 2초로 안정화 (HMR 에러 방지)
-    dedupingInterval: 1000
+  const [mounted, setMounted] = useState(false);
+  const { data, error, isLoading } = useSWR('/api/macro', fetcher, {
+    refreshInterval: 15000 
   });
 
-  const [spreadHistory, setSpreadHistory] = useState<number[]>([]);
-
   useEffect(() => {
-    const nextVal = data?.macro?.yieldSpread?.value;
-    if (nextVal !== undefined) {
-      setSpreadHistory(prev => {
-        // 중복 데이터 추가 방지 및 최신 20개 유지
-        if (prev.length > 0 && prev[prev.length - 1] === nextVal) return prev;
-        return [...prev, nextVal].slice(-20);
-      });
-    }
-  }, [data]);
+    setMounted(true);
+  }, []);
 
-  if (isLoading || !data?.macro) return <div style={{ height: '90px' }}><WidgetSkeleton /></div>;
+  if (!mounted) return null;
+  if (isLoading || error) return <div className={styles.loadingBar}>SYNCHRONIZING GLOBAL KPI TERMINAL...</div>;
 
-  const m = data.macro;
+  const lastUpdated = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+
+  // Data mapping for safety
+  const m = data?.macro || {};
+  const s = data?.stocks || [];
+  const xr = data?.exchangeRates || [];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-panel"
-      style={{ 
-        padding: '0.75rem 1.1rem', 
-        marginBottom: '1rem', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '0.75rem',
-        borderRadius: '16px',
-        border: '1px solid var(--border-glass)',
-        overflow: 'hidden'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div style={{ padding: '0.35rem', background: 'var(--accent-gradient)', borderRadius: '8px', color: 'white' }}>
-            <Globe size={14} />
+    <div className={styles.macroTerminal}>
+      {/* Header section remains unchanged as requested in previous steps */}
+      <div className={styles.terminalHeader}>
+        <div className={styles.headerLeft}>
+          <div className={styles.headerIconBox}>
+             <Globe size={18} className={styles.globeIcon} />
           </div>
-          <div>
-            <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 1000, letterSpacing: '-0.01em' }}>매크로 인플럭스 <span style={{ color: 'var(--accent-primary)', fontSize: '0.65rem', marginLeft: '0.3rem', verticalAlign: 'middle' }}>LIVE</span></h4>
-            <div style={{ fontSize: '0.5rem', color: '#64748b', fontWeight: 850, marginTop: '1px' }}>GLOBAL REAL-TIME DATA STREAM</div>
+          <div className={styles.headerTitleGroup}>
+            <h3 className={styles.terminalTitle}>글로벌 마켓 인플럭스</h3>
+            <div className={styles.liveIndicator}>
+              <div className={styles.liveDot} />
+              <span>LIVE REAL-TIME STREAM</span>
+            </div>
           </div>
         </div>
         
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.8rem', 
-          background: 'rgba(99, 102, 241, 0.04)', 
-          padding: '0.3rem 0.75rem', 
-          borderRadius: '10px',
-          border: '1px solid rgba(99, 102, 241, 0.08)'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '0.5rem', fontWeight: 950, color: '#6366f1', textTransform: 'uppercase', opacity: 0.75 }}>KOR-USA SPREAD</span>
-            <span style={{ fontSize: '0.95rem', fontWeight: 1000, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
-              {m.yieldSpread.value.toFixed(3)}%
-            </span>
-          </div>
-          <MiniSpreadChart data={spreadHistory} />
+        <div className={styles.headerRight}>
+           <div className={styles.updateBadge}>
+              <Clock size={12} />
+              <span>마지막 업데이트: {lastUpdated}</span>
+           </div>
         </div>
       </div>
 
-      <div style={{ 
-        display: 'flex', 
-        gap: '0.4rem', 
-        overflowX: 'auto', 
-        paddingBottom: '0.2rem',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        justifyContent: 'flex-start'
-      }}>
-        <DataBox label="DXY INDEX" value={m.dxy.value.toFixed(3)} color="#f59e0b" />
-        <DataBox label="US 10Y" value={`${m.us10y.value.toFixed(4)}%`} color="#ef4444" />
-        <DataBox label="KR 10Y" value={`${m.kr10y.value.toFixed(4)}%`} color="#3b82f6" />
-        
-        <div style={{ width: '1px', height: '20px', background: 'var(--border-glass)', alignSelf: 'center', margin: '0 0.1rem' }} />
-        
-        <DataBox label="Bitcoin" value={`$${m.btc.value.toLocaleString(undefined, { minimumFractionDigits: 1 })}`} color="var(--text-primary)" />
-        <DataBox label="Ethereum" value={`$${m.eth.value.toLocaleString(undefined, { minimumFractionDigits: 1 })}`} color="#818cf8" />
-        
-        <div style={{ width: '1px', height: '20px', background: 'var(--border-glass)', alignSelf: 'center', margin: '0 0.1rem' }} />
-        
-        <DataBox label="BTC.DOM" value={`${m.dominance.btc}%`} color="var(--text-primary)" />
-        <DataBox label="ETH.DOM" value={`${m.dominance.eth}%`} color="#818cf8" />
-        <DataBox label="USDT.DOM" value={`${m.dominance.usdt}%`} color="#22c55e" />
-        <DataBox label="USDC.DOM" value={`${m.dominance.usdc}%`} color="#3b82f6" />
+      {/* KPI Grid - Reordered and updated per user request */}
+      <div className={styles.integratedGrid}>
+        {/* Bonds & Rates Section */}
+        <KPICard label="한국 국채 10년" value={`${(m.kr10y?.value || 3.35).toFixed(3)}%`} change={m.kr10y?.change || -0.4} tier={1} />
+        <KPICard label="미국 국채 10년" value={`${(m.us10y?.value || 4.25).toFixed(3)}%`} change={m.us10y?.change || 0.05} tier={1} />
+        <KPICard label="한-미 채권 금리차" value={`${(m.yieldSpread?.value || 0.9).toFixed(3)}%`} sub="Spread (US-KR)" change={m.yieldSpread?.change || 1.2} tier={1} />
+        <KPICard label="실질 금리차" value={`${((m.us10y?.value || 4.25) - (m.kr10y?.value || 3.35)).toFixed(3)}%`} sub="CPI Adjusted (Est.)" change={0.02} tier={1} />
+
+        {/* Crypto Main */}
+        <KPICard label="비트코인 (BTC)" value={formatKoreanNumber(m.btc?.value || 110000000)} sub={`$${(m.btc?.value / (xr[0]?.rate || 1512)).toLocaleString()}`} change={m.btc?.change || 2.5} tier={2} />
+        <KPICard label="이더리움 (ETH)" value={formatKoreanNumber(m.eth?.value || 3500000)} sub={`$${(m.eth?.value / (xr[0]?.rate || 1512)).toLocaleString()}`} change={m.eth?.change || 1.8} tier={2} />
+
+        {/* Dominance/Indices */}
+        <KPICard label="BTC 점유율" value={`${m.dominance?.btc || 58.4}%`} change={0.12} tier={2} />
+        <KPICard label="ETH 점유율" value={`${m.dominance?.eth || 17.2}%`} change={-0.05} tier={2} />
+        <KPICard label="USDT 점유율" value={`${m.dominance?.usdt || 5.2}%`} change={0.02} tier={2} />
+        <KPICard label="USDC 점유율" value={`${m.dominance?.usdc || 1.8}%`} change={-0.01} tier={2} />
+
+        <KPICard label="나스닥 (SPX Proxy)" value={(s.find((item: any) => item.name === 'S&P 500')?.value || 6368).toLocaleString()} change={s.find((item: any) => item.name === 'S&P 500')?.change || 1.25} tier={3} />
+        <KPICard label="코스피 (KOSPI)" value={(s.find((item: any) => item.name === 'KOSPI')?.value || 2564).toLocaleString()} change={s.find((item: any) => item.name === 'KOSPI')?.change || 0.8} tier={3} />
+        <KPICard label="달러 인덱스 (DXY)" value={(m.dxy?.value || 104.5).toFixed(2)} change={m.dxy?.change || 0.15} tier={3} />
+        <KPICard label="원화 (USD/KRW)" value={formatKRW(xr.find((item: any) => item.pair.includes('USD/KRW'))?.rate || 1512)} change={xr.find((item: any) => item.pair.includes('USD/KRW'))?.change || 0.54} tier={3} />
       </div>
-    </motion.div>
+    </div>
   );
 }

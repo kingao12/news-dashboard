@@ -1,0 +1,134 @@
+.alertContainer {
+  position: fixed;
+  top: 100px; /* Ticker 아래 */
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  pointer-events: none;
+}
+
+.alertCard {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.alertCard:hover {
+  transform: translateX(-4px);
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.alertHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.typeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.alertTitle {
+  font-size: 0.75rem;
+  font-weight: 1000;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.alertTime {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.alertContent {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.alertAction {
+  margin-top: 10px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --- Type Styles --- */
+.whale .typeIcon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.whale { border-left: 3px solid #22c55e; }
+
+.macro .typeIcon { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+.macro { border-left: 3px solid #f43f5e; }
+
+.intelligence .typeIcon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.intelligence { border-left: 3px solid #8b5cf6; }
+
+.price .typeIcon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.price { border-left: 3px solid #f59e0b; }
+
+/* --- Progress Bar --- */
+.progressTimer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent-primary);
+  width: 100%;
+  animation: shrink 8s linear forwards;
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* --- Glow effects for alert cards --- */
+.intelligence {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+}
+.whale {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+}
+.macro {
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.1);
+}

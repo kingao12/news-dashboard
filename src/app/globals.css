@@ -1,18 +1,18 @@
 :root, [data-theme='light'] {
-  --bg-primary: #f0f4f8;
-  --bg-surface: rgba(255, 255, 255, 0.7);
-  --bg-secondary: rgba(0, 0, 0, 0.02);
-  --bg-glass: rgba(255, 255, 255, 0.4);
-  --border-glass: rgba(255, 255, 255, 0.5);
-  --bar-track: rgba(0, 0, 0, 0.05);
-  --text-primary: #0f172a; /* 更 진하게 */
-  --text-secondary: #475569; /* 更 진한 회색 */
+  --bg-primary: #f8fafc; /* 더 부드러운 오프화이트 */
+  --bg-surface: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --border-glass: rgba(0, 0, 0, 0.06);
+  --bar-track: rgba(0, 0, 0, 0.03);
+  --text-primary: #1e293b; /* 눈이 편안한 슬레이트 네이비 */
+  --text-secondary: #64748b; /* 부드러운 회색 */
   --accent-primary: #4f46e5;
-  --accent-glow: rgba(79, 70, 229, 0.15);
-  --accent-gradient: linear-gradient(135deg, #4338ca, #6d28d9, #be185d);
+  --accent-glow: rgba(79, 70, 229, 0.08);
+  --accent-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  --blur-amount: 12px;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --blur-amount: 10px;
   /* Standard Premium Text Scale */
   --text-h1: 2.25rem;
   --text-h2: 1.5rem;
@@ -22,18 +22,18 @@
 }
 
 [data-theme='dark'] {
-  --bg-primary: #05070a;
-  --bg-surface: rgba(13, 17, 23, 0.75);
-  --bg-secondary: rgba(255, 255, 255, 0.02);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --bar-track: rgba(255, 255, 255, 0.03);
-  --text-primary: #f1f5f9;
+  --bg-primary: #020408; /* 더 깊은 다크 배경 */
+  --bg-surface: #0a0c10;
+  --bg-secondary: #11141b;
+  --bg-glass: rgba(10, 12, 16, 0.4);
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --bar-track: rgba(255, 255, 255, 0.02);
+  --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --accent-primary: #818cf8;
-  --accent-glow: rgba(129, 140, 248, 0.25);
-  --accent-gradient: linear-gradient(135deg, #818cf8, #c084fc, #fb7185);
-  --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --accent-glow: rgba(129, 140, 248, 0.15);
+  --accent-gradient: linear-gradient(135deg, #818cf8, #c084fc);
+  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   --blur-amount: 15px;
 }
 
@@ -118,16 +118,65 @@ h1, h2, h3, h4, h5, h6 {
   white-space: nowrap;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-glass);
-  padding: 10px 0;
+  padding: 12px 0;
   position: relative;
+  z-index: 100;
 }
 
-.ticker-item {
-  display: inline-block;
-  padding: 0 1.618rem;
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  animation: ticker 80s linear infinite;
+  width: max-content;
+}
+
+.ticker-wrap:hover .ticker-inner {
+  animation-play-state: paused;
+}
+
+.ticker-item-wrapper {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  transition: opacity 0.2s;
+}
+
+.ticker-item-wrapper:hover {
+  opacity: 0.8;
+}
+
+.ticker-urgent {
+  margin-right: 6px;
+  font-size: 1rem;
+  animation: live-pulse 1s infinite;
+}
+
+.ticker-category {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
   font-weight: 800;
-  font-size: var(--text-sm); /* Using 0.618rem */
-  letter-spacing: -0.01em;
+  margin-right: 8px;
+  letter-spacing: 0.05em;
+}
+
+.ticker-source {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  margin-right: 8px;
+  font-weight: 700;
+}
+
+.ticker-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ticker-divider {
+  margin: 0 1rem;
+  color: var(--border-glass);
+  opacity: 0.5;
 }
 
 /* Pulse animation for live indicators */
@@ -219,4 +268,33 @@ body {
   text-rendering: optimizeSpeed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.korean-unit {
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-left: 1px;
+  color: var(--text-secondary);
+}
+
+.label-kr {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+
+.value-main {
+  font-size: 1.1rem;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.value-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }

@@ -9,8 +9,8 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 }
 
 .skeletonImage,
@@ -19,10 +19,12 @@
 .skeletonTitle,
 .skeletonTitleShort,
 .skeletonSnippet,
-.skeletonFooter {
-  background: linear-gradient(90deg, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.05) 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear;
+.skeletonFooter,
+.skeletonMetaList,
+.skeletonTitleList {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 2.5s infinite linear;
   border-radius: 4px;
 }
 
@@ -61,11 +63,6 @@
   height: 24px;
 }
 
-.skeletonTitleShort {
-  width: 70%;
-  height: 24px;
-}
-
 .skeletonSnippet {
   width: 100%;
   height: 60px;
@@ -76,4 +73,26 @@
   width: 80px;
   height: 16px;
   margin-top: auto;
+}
+
+/* --- List Mode Skeleton --- */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeletonMetaList {
+  width: 120px;
+  height: 14px;
+}
+
+.skeletonTitleList {
+  width: 90%;
+  height: 20px;
 }

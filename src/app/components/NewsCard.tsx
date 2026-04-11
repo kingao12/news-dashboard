@@ -1,7 +1,12 @@
+'use client';
+
 import { useState, useEffect, memo, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './NewsCard.module.css';
-import { ExternalLink, Clock, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { 
+  ExternalLink, Clock, TrendingUp, TrendingDown, 
+  Minus, Info, Zap, History 
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { motion } from 'framer-motion';
@@ -14,16 +19,17 @@ interface NewsItem {
   contentSnippet: string;
   source: string;
   thumbnail?: string;
+  category?: string;
 }
 
-const POSITIVE_WORDS = ["상승", "호재", "돌파", "혁신", "성장", "급등", "bullish", "gain", "breakthrough", "win", "success", "반등", "최고", "회복"];
-const NEGATIVE_WORDS = ["하락", "폭락", "우려", "위기", "급락", "제재", "bearish", "crash", "warning", "fall", "drop", "loss", "위협", "붕괴"];
+const POSITIVE_WORDS = ["상승", "호재", "돌파", "혁신", "성장", "급등", "반등", "최고", "회복", "강세", "bullish", "gain"];
+const NEGATIVE_WORDS = ["하락", "폭락", "우려", "위기", "급락", "제재", "위협", "붕괴", "약세", "bearish", "crash"];
 
 const getSentiment = (title: string, snippet: string) => {
   const text = (title + snippet).toLowerCase();
-  if (POSITIVE_WORDS.some(w => text.includes(w))) return { label: 'BULLISH', color: '#22c55e', icon: TrendingUp };
-  if (NEGATIVE_WORDS.some(w => text.includes(w))) return { label: 'BEARISH', color: '#ef4444', icon: TrendingDown };
-  return { label: 'NEUTRAL', color: '#94a3b8', icon: Minus };
+  if (POSITIVE_WORDS.some(w => text.includes(w))) return { label: '긍정', color: '#10b981', icon: TrendingUp };
+  if (NEGATIVE_WORDS.some(w => text.includes(w))) return { label: '부정', color: '#f43f5e', icon: TrendingDown };
+  return { label: '중립', color: '#94a3b8', icon: Minus };
 };
 
 const isValidImageUrl = (url?: string): boolean => {
@@ -37,17 +43,22 @@ const isValidImageUrl = (url?: string): boolean => {
 };
 
 const NewsCard = memo(({ item, onClick, isListMode = false }: {
-  item: NewsItem;
-  onClick: (item: NewsItem) => void;
+  item: any; // NewsItem extended with AI metadata
+  onClick: (item: any) => void;
   isListMode?: boolean;
 }) => {
   const [timeAgo, setTimeAgo] = useState('');
   const [imgError, setImgError] = useState(false);
 
+  // AI Metadata
   const sentiment = getSentiment(item.title, item.contentSnippet);
   const SentimentIcon = sentiment.icon;
-  const showImage = isValidImageUrl(item.thumbnail) && !imgError;
+  const showImage = isValidImageUrl(item.thumbnail) && !imgError && !isListMode;
   const cleanSnippet = item.contentSnippet?.replace(/<[^>]*>?/gm, '') || '';
+  
+  const isUrgent = item.importance === 'URGENT';
+  const isMajor = item.importance === 'MAJOR';
+  const hasClusters = item.clusterCount > 0;
 
   useEffect(() => {
     try {
@@ -61,155 +72,110 @@ const NewsCard = memo(({ item, onClick, isListMode = false }: {
 
   const handleImgError = useCallback(() => setImgError(true), []);
 
-  // ── 리스트 뷰 ────────────────────────────────────────────────
+  // ── 리스트 뷰 (초고압축 인텔리전스 모드) ──────────
   if (isListMode) {
     return (
       <motion.div
         layout
-        initial={{ opacity: 0, x: -8 }}
+        initial={{ opacity: 0, x: -4 }}
         animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 8 }}
-        whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}
-        transition={{ duration: 0.15 }}
-        className={`${styles.cardList} glass-card`}
+        className={`${styles.cardList} ${isUrgent ? styles.urgentBorder : ''} glass-card`}
         onClick={() => onClick(item)}
       >
-        {/* 썸네일 (좌측) */}
-        {showImage && (
-          <div className={styles.thumbnailContainerList}>
-            <Image
-              src={item.thumbnail!}
-              alt={item.title}
-              fill
-              sizes="120px"
-              className={styles.thumbnail}
-              loading="lazy"
-              onError={handleImgError}
-              style={{ objectFit: 'cover' }}
-              unoptimized={false}
-            />
-            <div className={styles.thumbnailOverlay} />
-          </div>
-        )}
-
-        {/* 텍스트 (우측) */}
-        <div className={styles.contentList}>
-          {/* 메타 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
-            <span className={styles.source} style={{ fontSize: '0.55rem' }}>{item.source}</span>
-            <span
-              style={{
-                fontSize: '0.55rem', color: sentiment.color, fontWeight: 800,
-                background: `${sentiment.color}15`, padding: '0.1rem 0.3rem',
-                borderRadius: '3px', border: `1px solid ${sentiment.color}30`,
-              }}
-            >
-              {sentiment.label}
-            </span>
-            {timeAgo && (
-              <span className={styles.time} style={{ fontSize: '0.58rem', marginLeft: 'auto' }} suppressHydrationWarning>
-                <Clock size={10} />{timeAgo}
-              </span>
-            )}
-          </div>
-
-          {/* 제목 */}
-          <p className={styles.titleList}>{item.title}</p>
-
-          {/* 스니펫 */}
-          {cleanSnippet && (
-            <p className={styles.snippetList}>
-              {cleanSnippet.length > 80 ? cleanSnippet.slice(0, 80) + '…' : cleanSnippet}
-            </p>
-          )}
-
-          {/* 푸터 */}
-          <div className={styles.footerList}>
-            <div className={styles.readMore} style={{ fontSize: '0.65rem' }}>
-              <span>상세 보기</span>
-              <ExternalLink size={12} className={styles.linkIcon} />
+        <div className={styles.metaList}>
+          {isUrgent ? (
+            <div className={styles.urgentBadge}>
+              <Zap size={10} fill="currentColor" /> URGENT
             </div>
+          ) : isMajor ? (
+            <div className={styles.majorBadge}>MAJOR</div>
+          ) : (
+            <span className={styles.sourceBadge}>{item.source}</span>
+          )}
+          <span className={styles.timeText}>{timeAgo}</span>
+          {hasClusters && <span className={styles.clusterTag}>+{item.clusterCount} related</span>}
+        </div>
+        <div className={styles.titleRowList}>
+          <h3 className={styles.titleList}>{item.title}</h3>
+          <div className={styles.impactScoreMini}>
+            <div className={styles.scoreBar} style={{ height: `${item.impactScore}%`, backgroundColor: sentiment.color }} />
           </div>
         </div>
       </motion.div>
     );
   }
 
-  // ── 카드 뷰 (기본) ───────────────────────────────────────────
+  // ── 카드 뷰 (인텔리전스 분석형) ──────────────────
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
-      transition={{ duration: 0.2 }}
-      className={`${styles.card} glass-card`}
+      whileHover={{ y: -4, borderColor: 'rgba(129, 140, 248, 0.4)' }}
+      className={`${styles.card} ${isUrgent ? styles.urgentBorder : ''} glass-card`}
       onClick={() => onClick(item)}
-      style={{ cursor: 'pointer' }}
     >
-      <div className={styles.glow} />
-
-      {showImage ? (
-        <div className={styles.thumbnailContainer}>
+      <div className={styles.influenceBar} style={{ width: `${item.impactScore}%`, background: `linear-gradient(90deg, ${sentiment.color}80, ${sentiment.color})` }} />
+      
+      {showImage && (
+        <div className={styles.imageWrapper}>
           <Image
             src={item.thumbnail!}
-            alt={item.title}
+            alt=""
             fill
-            sizes="(max-width: 640px) 100vw, 380px"
+            sizes="(max-width: 768px) 100vw, 400px"
             className={styles.thumbnail}
-            loading="lazy"
             onError={handleImgError}
-            style={{ objectFit: 'cover' }}
-            unoptimized={false}
+            priority={false}
           />
-          <div className={styles.thumbnailOverlay} />
-          <div
-            className={styles.sentimentBadge}
-            style={{ color: sentiment.color, borderColor: `${sentiment.color}33`, background: `${sentiment.color}11` }}
-          >
-            <SentimentIcon size={14} />
-            <span>{sentiment.label}</span>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.noThumbnailPadding}>
-          <div
-            className={styles.inlineBadge}
-            style={{ color: sentiment.color, borderColor: `${sentiment.color}33`, background: `${sentiment.color}11` }}
-          >
-            <SentimentIcon size={12} />
-            <span>{sentiment.label}</span>
-          </div>
+          <div className={styles.imageOverlay} />
+          <div className={styles.categoryBadge}>{item.category || '인사이트'}</div>
+          {isUrgent && <div className={styles.urgentFlash}>BREAKING NEWS</div>}
         </div>
       )}
 
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <div className={styles.metaLeft}>
-            <span className={styles.source}>{item.source}</span>
+      <div className={styles.cardBody}>
+        <div className={styles.cardMeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={styles.sourceText}>{item.source}</span>
+            <div style={{ width: '2px', height: '2px', borderRadius: '50%', background: 'var(--text-secondary)' }} />
+            <span className={styles.timeText}>{timeAgo}</span>
           </div>
-          {timeAgo && (
-            <span className={styles.time} suppressHydrationWarning>
-              <Clock size={12} />
-              {timeAgo}
-            </span>
-          )}
+          <div 
+            className={styles.sentimentChip} 
+            style={{ color: sentiment.color, border: `1px solid ${sentiment.color}30`, background: `${sentiment.color}10` }}
+          >
+            <SentimentIcon size={12} />
+            {sentiment.label}
+          </div>
         </div>
-        <h3 className={styles.title}>{item.title}</h3>
-        <p className={styles.snippet}>
-          {cleanSnippet.length > 90 ? cleanSnippet.slice(0, 90) + '…' : cleanSnippet}
+
+        <h3 className={styles.cardTitle}>{item.title}</h3>
+        
+        <p className={styles.cardSnippet}>
+          {cleanSnippet.length > 100 ? cleanSnippet.slice(0, 100) + '...' : cleanSnippet}
         </p>
-        <div className={styles.footer}>
-          <div className={styles.readMore}>
-            <span>상세 보기</span>
-            <ExternalLink size={14} className={styles.linkIcon} />
+
+        <div className={styles.cardFooter}>
+          <div className={styles.statsGroup}>
+             {hasClusters && <span className={styles.clusterInfo}><History size={12} /> {item.clusterCount}개 유사 기사</span>}
+             <span className={styles.impactLabel}>영향력 {item.impactScore}%</span>
           </div>
+          <span className={styles.readMoreBtn}>
+            AI 분석 리포트
+            <ArrowRightIcon size={14} style={{ marginLeft: '4px' }} />
+          </span>
         </div>
       </div>
     </motion.div>
   );
 });
+
+const ArrowRightIcon = ({ size, style }: any) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
 
 NewsCard.displayName = 'NewsCard';
 export default NewsCard;

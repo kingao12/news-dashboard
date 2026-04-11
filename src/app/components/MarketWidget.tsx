@@ -1,9 +1,12 @@
+'use client';
+
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import useSWR from 'swr';
 import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
 import { Coins, LineChart, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatKoreanCurrency, formatKRW, formatKoreanNumber, formatPercent } from '@/utils/formatters';
 
 const fetcher = async (url: string) => {
   const r = await fetch(url);
@@ -18,151 +21,120 @@ const INTERVALS = [
   { label: '5분', value: '5m' },
   { label: '15분', value: '15m' },
   { label: '1시간', value: '1h' },
-  { label: '4시간', value: '4h' },
-  { label: '일봉', value: '1d' },
-  { label: '주봉', value: '1w' },
-  { label: '월봉', value: '1M' }
+  { label: '일봉', value: '1d' }
 ];
 
-declare global {
-  interface Window {
-    TradingView: any;
-  }
-}
+const CHART_STYLES = [
+  { label: '캔들', value: '1' },
+  { label: '라인', value: '2' },
+  { label: '영역', value: '3' },
+  { label: '바', value: '0' }
+];
 
-const CHART_HEIGHT = 300;
+const CHART_HEIGHT = 450; // 차트 시인성을 위해 높이 상향 조정
 
 const TradingViewChart = memo(
   ({
     symbol,
     theme,
     interval,
-    isCrypto
+    isCrypto,
+    chartStyle
   }: {
     symbol: string;
     theme: string;
     interval: string;
     isCrypto: boolean;
+    chartStyle: string;
   }) => {
-    const hostRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-      if (!hostRef.current) return;
+      if (!containerRef.current) return;
 
-      hostRef.current.innerHTML = '';
+      // 기존 차트 정리
+      containerRef.current.innerHTML = '';
 
       const intervalMap: Record<string, string> = {
-        '1m': '1',
-        '5m': '5',
-        '15m': '15',
-        '1h': '60',
-        '4h': '240',
-        '1d': 'D',
-        '1w': 'W',
-        '1M': 'M'
+        '1m': '1', '5m': '5', '15m': '15', '1h': '60', '1d': 'D'
       };
 
       const tvInterval = intervalMap[interval] || '1';
+      
+      // 심볼 포맷 표준화
+      let formattedSymbol = symbol;
+      if (isCrypto) {
+        // BTC -> BINANCE:BTCUSDT
+        const cleanSym = symbol.replace('USDT', '').toUpperCase();
+        formattedSymbol = `BINANCE:${cleanSym}USDT`;
+      } else if (!symbol.includes(':')) {
+        // AAPL -> NASDAQ:AAPL
+        formattedSymbol = `NASDAQ:${symbol.toUpperCase()}`;
+      }
 
-      const formattedSymbol = isCrypto
-        ? `BINANCE:${symbol.toUpperCase()}USDT`
-        : symbol.includes(':')
-          ? symbol
-          : `NASDAQ:${symbol}`;
-
-      const widget = document.createElement('div');
-      widget.id = 'tv_chart_container';
-      widget.className = 'tradingview-widget-container__widget';
-      widget.style.width = '100%';
-      widget.style.height = `${CHART_HEIGHT}px`;
+      const widgetId = `tv_chart_${Math.random().toString(36).substr(2, 9)}`;
+      const widgetDiv = document.createElement('div');
+      widgetDiv.id = widgetId;
+      widgetDiv.style.width = '100%';
+      widgetDiv.style.height = '100%';
+      containerRef.current.appendChild(widgetDiv);
 
       const script = document.createElement('script');
-      script.src =
-        'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
       script.type = 'text/javascript';
       script.async = true;
 
       const widgetConfig = {
-        width: '100%',
-        height: CHART_HEIGHT,
+        autosize: true,
         symbol: formattedSymbol,
         interval: tvInterval,
         timezone: 'Asia/Seoul',
         theme: theme === 'dark' ? 'dark' : 'light',
-        style: '1',
+        style: chartStyle,
         locale: 'kr',
         enable_publishing: false,
+        hide_top_toolbar: true,
         allow_symbol_change: false,
-        calendar: false,
-        support_host: 'https://www.tradingview.com',
-        hide_top_toolbar: false,
-        hide_legend: false,
+        container_id: widgetId,
         save_image: false,
-        container_id: 'tv_chart_container',
-        studies: ['RSI@tv-basicstudies', 'MASimple@tv-basicstudies']
+        backgroundColor: theme === 'dark' ? 'rgba(13, 17, 23, 1)' : 'rgba(255, 255, 255, 1)',
+        gridColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        width: "100%",
+        height: "100%",
       };
 
       script.innerHTML = JSON.stringify(widgetConfig);
+      containerRef.current.appendChild(script);
 
-      hostRef.current.appendChild(widget);
-      hostRef.current.appendChild(script);
+      // 리사이즈 강제 트리거 (일부 브라우저 초기 높이 0px 이슈 방지)
+      const resizeObserver = new ResizeObserver(() => {
+        if (containerRef.current && containerRef.current.offsetHeight > 0) {
+          // 필요 시 내부 iframe 리사이즈 로직 추가 가능
+        }
+      });
+      resizeObserver.observe(containerRef.current);
 
       return () => {
-        if (hostRef.current) hostRef.current.innerHTML = '';
+        resizeObserver.disconnect();
+        if (containerRef.current) containerRef.current.innerHTML = '';
       };
-    }, [symbol, theme, interval, isCrypto]);
+    }, [symbol, theme, interval, isCrypto, chartStyle]);
 
     return (
       <div
-        ref={hostRef}
+        ref={containerRef}
         className="tradingview-widget-container"
         style={{
           width: '100%',
           height: `${CHART_HEIGHT}px`,
-          background: 'var(--bg-secondary)',
-          borderRadius: '12px',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          background: 'var(--bg-secondary)',
+          borderRadius: '12px'
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background:
-              'radial-gradient(circle at center, rgba(99,102,241,0.05) 0%, transparent 70%)',
-            zIndex: 1,
-            pointerEvents: 'none'
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '1rem',
-              opacity: 0.5
-            }}
-          >
-            <Activity
-              size={32}
-              className="live-indicator"
-              style={{ color: 'var(--accent-primary)' }}
-            />
-            <span
-              style={{
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                color: 'var(--text-secondary)',
-                letterSpacing: '0.1em'
-              }}
-            >
-              INITIALIZING ENGINE...
-            </span>
-          </div>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'var(--text-secondary)', fontSize: '0.8rem', zIndex: 0 }}>
+          차트 초기화 중...
         </div>
       </div>
     );
@@ -174,270 +146,196 @@ TradingViewChart.displayName = 'TradingViewChart';
 const LivePrice = ({
   basePrice,
   symbol,
-  className,
-  minWidth = '90px'
+  currency = '$',
+  usdKrw = 1,
+  showDual = false
 }: {
   basePrice: number;
   symbol: string;
-  className?: string;
-  minWidth?: string;
+  currency?: string;
+  usdKrw?: number;
+  showDual?: boolean;
 }) => {
   const [price, setPrice] = useState(basePrice);
   const [flashClass, setFlashClass] = useState('');
+  const [isLive, setIsLive] = useState(false);
   const prevPrice = useRef(basePrice);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const handlePriceUpdate = (e: any) => {
-      if (
-        typeof e.detail?.symbol === 'string' &&
-        e.detail.symbol.toUpperCase() === symbol.toUpperCase()
-      ) {
-        const newPrice = e.detail.price;
+    // 1. Binance WebSocket 연결 (가상자산인 경우)
+    if (symbol && !symbol.includes(':')) { // 가상자산은 보통 symbol만 전달됨 (예: BTC)
+      const cleanSymbol = symbol.toLowerCase().replace('usdt', '');
+      const wsUrl = `wss://stream.binance.com:9443/ws/${cleanSymbol}usdt@ticker`;
+      
+      if (wsRef.current) wsRef.current.close();
+      
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
+      ws.onopen = () => setIsLive(true);
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const newPrice = parseFloat(data.c);
+        if (newPrice !== prevPrice.current) {
+          setFlashClass(newPrice > prevPrice.current ? 'price-flash-up' : 'price-flash-down');
+          setPrice(newPrice);
+          prevPrice.current = newPrice;
+          setTimeout(() => setFlashClass(''), 800);
+        }
+      };
+      
+      ws.onclose = () => setIsLive(false);
+      ws.onerror = () => setIsLive(false);
+
+      return () => ws.close();
+    }
+    
+    // 2. 비가상자산의 경우 기존 브로드캐스트 이벤트 구독 유지
+    const handlePriceUpdate = (e: any) => {
+      if (typeof e.detail?.symbol === 'string' && e.detail.symbol.toUpperCase() === symbol.toUpperCase()) {
+        const newPrice = e.detail.price;
         if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
         else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
-
         setPrice(newPrice);
         prevPrice.current = newPrice;
-
         setTimeout(() => setFlashClass(''), 800);
       }
     };
-
     window.addEventListener('binance-price-update', handlePriceUpdate);
-    return () =>
-      window.removeEventListener('binance-price-update', handlePriceUpdate);
+    return () => window.removeEventListener('binance-price-update', handlePriceUpdate);
   }, [symbol]);
 
   useEffect(() => {
-    if (basePrice > 0 && Math.abs(basePrice - price) / basePrice > 0.01) {
+    // SWR 데이터 갱신 시 보정
+    if (basePrice > 0 && Math.abs(basePrice - price) / basePrice > 0.05) {
       setPrice(basePrice);
       prevPrice.current = basePrice;
     }
-  }, [basePrice, price]);
+  }, [basePrice]);
+
+  const displayPrice = showDual && currency === '$' 
+    ? formatKRW(Math.floor(price * usdKrw)) 
+    : currency === '$' ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(price);
 
   return (
-    <span
-      className={`${className || ''} ${flashClass} terminal-text`}
-      style={{
-        display: 'inline-block',
-        minWidth,
-        textAlign: 'right',
-        flexShrink: 0,
-        transition: 'color 0.4s ease'
-      }}
-    >
-      ${price.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}
-    </span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {isLive && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '1px 5px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '4px' }}>
+            <span style={{ width: '4px', height: '4px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+            <span style={{ fontSize: '0.6rem', color: '#22c55e', fontWeight: 900 }}>LIVE</span>
+          </div>
+        )}
+        <span className={`${flashClass} tabular-nums`} style={{ fontSize: '1.4rem', fontWeight: 1000, transition: 'color 0.4s ease' }}>
+          {displayPrice}
+        </span>
+      </div>
+      {showDual && currency === '$' && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+          ${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </span>
+      )}
+    </div>
   );
 };
 
-const AssetLogo = memo(
-  ({ src, symbol, size = 22 }: { src?: string; symbol: string; size?: number }) => {
-    const [error, setError] = useState(false);
-
-    if (!src || error) {
-      return (
-        <div
-          style={{
-            width: size,
-            height: size,
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: size * 0.45,
-            fontWeight: 600,
-            color: '#94a3b8'
-          }}
-        >
-          {symbol[0]}
-        </div>
-      );
-    }
-
+const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string; symbol: string; size?: number }) => {
+  const [error, setError] = useState(false);
+  if (!src || error) {
     return (
-      <img
-        src={src}
-        alt=""
-        onError={() => setError(true)}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: '50%',
-          objectFit: 'contain',
-          background: '#fff'
-        }}
-      />
+      <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.45, fontWeight: 800, color: 'var(--text-secondary)', border: '1px solid var(--border-glass)' }}>
+        {symbol[0]}
+      </div>
     );
   }
-);
+  return (
+    <img src={src} alt="" onError={() => setError(true)} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'contain', background: '#fff', border: '1px solid var(--border-glass)' }} />
+  );
+});
 
 AssetLogo.displayName = 'AssetLogo';
 
 export default function MarketWidget() {
-  const [activeTab, setActiveTab] = useState<'crypto' | 'domestic' | 'overseas'>(
-    'crypto'
-  );
+  const [activeTab, setActiveTab] = useState<'crypto' | 'domestic' | 'overseas'>('crypto');
   const [cryptoSymbol, setCryptoSymbol] = useState('BTC');
   const [domesticSymbol, setDomesticSymbol] = useState('005930');
   const [overseasSymbol, setOverseasSymbol] = useState('AAPL');
   const [interval, setIntervalVal] = useState('1m');
-  const [cryptoRanking, setCryptoRanking] = useState<any[]>([]);
-  const [domesticRanking, setDomesticRanking] = useState<any[]>([
-    { id: 'samsung', symbol: '005930', name: '삼성전자', current_price: 0 },
-    { id: 'hynix', symbol: '000660', name: 'SK하이닉스', current_price: 0 },
-    { id: 'lgensol', symbol: '373220', name: 'LG에너지솔루션', current_price: 0 },
-    { id: 'biologics', symbol: '207940', name: '삼성바이오로직스', current_price: 0 },
-    { id: 'hyundai', symbol: '005380', name: '현대차', current_price: 0 },
-    { id: 'naver', symbol: '035420', name: '네이버', current_price: 0 }
-  ]);
-  const [overseasRanking, setOverseasRanking] = useState<any[]>([
-    { id: 'aapl', symbol: 'AAPL', name: 'Apple', current_price: 0 },
-    { id: 'nvda', symbol: 'NVDA', name: 'NVIDIA', current_price: 0 },
-    { id: 'msft', symbol: 'MSFT', name: 'Microsoft', current_price: 0 },
-    { id: 'googl', symbol: 'GOOGL', name: 'Alphabet', current_price: 0 },
-    { id: 'tsla', symbol: 'TSLA', name: 'Tesla', current_price: 0 }
-  ]);
-
+  const [chartStyle, setChartStyle] = useState('1');
   const [isDark, setIsDark] = useState(true);
 
+  const { data: macroData } = useSWR('/api/macro', fetcher);
+  const usdKrw = macroData?.exchangeRates?.find((e: any) => e.pair.includes('USD/KRW'))?.rate || 1400;
+
+  // --- 외부 연동 리스너 (Money Flow -> Market Chart) ---
   useEffect(() => {
-    const check = () =>
-      setIsDark(document.documentElement.getAttribute('data-theme') !== 'light');
+    const handleSymbolChange = (e: any) => {
+      const { symbol, category } = e.detail;
+      if (!symbol) return;
+
+      // 카테고리별 매핑 로직
+      if (category === 'CRYPTO') {
+        setActiveTab('crypto');
+        setCryptoSymbol(symbol === 'EXCHANGE' ? 'BTC' : symbol);
+      } else if (category === 'REGION') {
+        if (symbol === 'KR') {
+          setActiveTab('domestic');
+          setDomesticSymbol('005930');
+        } else if (symbol === 'US') {
+          setActiveTab('overseas');
+          setOverseasSymbol('QQQ');
+        } else if (symbol === 'JP') {
+          setActiveTab('overseas');
+          setOverseasSymbol('7203'); // Toyota on some providers or just SPY for fallback
+        } else {
+          setActiveTab('overseas');
+          setOverseasSymbol('SPY');
+        }
+      } else if (category === 'SECTOR') {
+        setActiveTab('overseas');
+        if (symbol === 'NVDA') setOverseasSymbol('NVDA');
+        else if (symbol === 'BANK') setOverseasSymbol('XLF');
+        else if (symbol === 'ENERGY') setOverseasSymbol('XLE');
+        else setOverseasSymbol('SPY');
+      } else {
+        // ASSET, STYLE, BOND 등
+        setActiveTab('overseas');
+        if (symbol === 'EQUITY') setOverseasSymbol('SPY');
+        else if (symbol === 'BOND') setOverseasSymbol('TLT');
+        else if (symbol === 'GOLD') setOverseasSymbol('GLD');
+        else setOverseasSymbol('SPY');
+      }
+    };
+
+    window.addEventListener('change-market-symbol', handleSymbolChange);
+    return () => window.removeEventListener('change-market-symbol', handleSymbolChange);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.getAttribute('data-theme') !== 'light');
     check();
     const obs = new MutationObserver(check);
-    obs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     return () => obs.disconnect();
   }, []);
 
-  const cryptoEndpoint = `/api/crypto?symbol=${cryptoSymbol}&interval=${interval}`;
-  const domesticEndpoint = `/api/stocks?symbol=${domesticSymbol}&interval=${interval}&market=kr`;
-  const overseasEndpoint = `/api/stocks?symbol=${overseasSymbol}&interval=${interval}&market=us`;
+  const endpoint = activeTab === 'crypto' 
+    ? `/api/crypto?symbol=${cryptoSymbol}&interval=${interval}` 
+    : activeTab === 'domestic' 
+      ? `/api/stocks?symbol=${domesticSymbol}&interval=${interval}&market=kr`
+      : `/api/stocks?symbol=${overseasSymbol}&interval=${interval}&market=us`;
 
-  const {
-    data: cryptoData,
-    error: cryptoError,
-    isLoading: cryptoLoading
-  } = useSWR(cryptoEndpoint, fetcher, {
+  const { data, error, isLoading } = useSWR(endpoint, fetcher, {
     keepPreviousData: true,
-    revalidateOnFocus: false,
-    refreshInterval: activeTab === 'crypto' && interval === '1m' ? 3000 : 30000
+    refreshInterval: 3000
   });
 
-  const {
-    data: domesticData,
-    error: domesticError,
-    isLoading: domesticLoading
-  } = useSWR(activeTab === 'domestic' ? domesticEndpoint : null, fetcher, {
-    keepPreviousData: true,
-    revalidateOnFocus: false,
-    refreshInterval: interval === '1m' ? 5000 : 60000
-  });
-
-  const {
-    data: overseasData,
-    error: overseasError,
-    isLoading: overseasLoading
-  } = useSWR(activeTab === 'overseas' ? overseasEndpoint : null, fetcher, {
-    keepPreviousData: true,
-    revalidateOnFocus: false,
-    refreshInterval: interval === '1m' ? 5000 : 60000
-  });
-
-  useEffect(() => {
-    if (activeTab !== 'crypto') return;
-
-    let ws: WebSocket | null = null;
-    let rafId: number | null = null;
-    const batch = new Map<string, number>();
-
-    const flush = () => {
-      batch.forEach((price, symbol) => {
-        window.dispatchEvent(
-          new CustomEvent('binance-price-update', { detail: { symbol, price } })
-        );
-      });
-      batch.clear();
-      rafId = null;
-    };
-
-    const connectWS = () => {
-      ws = new WebSocket('wss://fstream.binance.com/ws/!miniTicker@arr');
-
-      ws.onmessage = event => {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) {
-          data.forEach((ticker: any) => {
-            batch.set(ticker.s.replace('USDT', ''), parseFloat(ticker.c));
-          });
-          if (rafId === null) rafId = requestAnimationFrame(flush);
-        }
-      };
-
-      ws.onclose = () => setTimeout(connectWS, 3000);
-    };
-
-    connectWS();
-
-    return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      ws?.close();
-    };
+  const handleRankingClick = useCallback((item: any) => {
+    if (activeTab === 'crypto') setCryptoSymbol(item.symbol);
+    else if (activeTab === 'domestic') setDomesticSymbol(item.symbol);
+    else setOverseasSymbol(item.symbol);
   }, [activeTab]);
-
-  useEffect(() => {
-    if (cryptoData?.marketCapList) setCryptoRanking(cryptoData.marketCapList);
-  }, [cryptoData]);
-
-  useEffect(() => {
-    if (domesticData?.marketCapList) setDomesticRanking(domesticData.marketCapList);
-  }, [domesticData]);
-
-  useEffect(() => {
-    if (overseasData?.marketCapList) setOverseasRanking(overseasData.marketCapList);
-  }, [overseasData]);
-
-  const data =
-    activeTab === 'crypto'
-      ? cryptoData
-      : activeTab === 'domestic'
-        ? domesticData
-        : overseasData;
-
-  const isLoading =
-    activeTab === 'crypto'
-      ? cryptoLoading
-      : activeTab === 'domestic'
-        ? domesticLoading
-        : overseasLoading;
-
-  const error =
-    activeTab === 'crypto'
-      ? cryptoError
-      : activeTab === 'domestic'
-        ? domesticError
-        : overseasError;
-
-  const handleTabChange = useCallback((tab: 'crypto' | 'domestic' | 'overseas') => {
-    setActiveTab(tab);
-  }, []);
-
-  const handleRankingClick = useCallback(
-    (item: any) => {
-      if (activeTab === 'crypto') setCryptoSymbol(item.symbol);
-      else if (activeTab === 'domestic') setDomesticSymbol(item.symbol);
-      else setOverseasSymbol(item.symbol);
-    },
-    [activeTab]
-  );
 
   const getCurrentSymbol = () => {
     if (activeTab === 'crypto') return cryptoSymbol;
@@ -445,182 +343,184 @@ export default function MarketWidget() {
     return `NASDAQ:${overseasSymbol}`;
   };
 
-  const rankingList =
-    activeTab === 'crypto'
-      ? cryptoRanking
-      : activeTab === 'domestic'
-        ? domesticRanking
-        : overseasRanking;
-
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={styles.widgetPanel}
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}
+      className="glass-panel"
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '1rem' }}
     >
-      <div className={styles.tabContainer}>
-        <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
+      {/* Tab Switcher */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        {(['crypto', 'domestic', 'overseas'] as const).map(tab => (
           <button
-            onClick={() => handleTabChange('crypto')}
-            className={`${styles.tabButton} ${activeTab === 'crypto' ? styles.tabButtonActive : ''
-              }`}
-            style={{ flex: 1 }}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1,
+              padding: '0.6rem 0.4rem',
+              borderRadius: '10px',
+              border: activeTab === tab ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+              background: activeTab === tab ? 'var(--accent-glow)' : 'var(--bg-secondary)',
+              color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              fontSize: '0.75rem',
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              minWidth: 0
+            }}
           >
-            <Coins size={14} /> 코인
-          </button>
-          <button
-            onClick={() => handleTabChange('domestic')}
-            className={`${styles.tabButton} ${activeTab === 'domestic' ? styles.tabButtonActive : ''
-              }`}
-            style={{ flex: 1 }}
-          >
-            <Activity size={14} /> 국내주식
-          </button>
-          <button
-            onClick={() => handleTabChange('overseas')}
-            className={`${styles.tabButton} ${activeTab === 'overseas' ? styles.tabButtonActive : ''
-              }`}
-            style={{ flex: 1 }}
-          >
-            <LineChart size={14} /> 해외주식
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.intervalBar}>
-        {INTERVALS.map(i => (
-          <button
-            key={i.value}
-            onClick={() => setIntervalVal(i.value)}
-            className={`${styles.intervalBtn} ${interval === i.value ? styles.intervalActive : ''
-              }`}
-          >
-            {i.label}
+            {tab === 'crypto' ? <Coins size={12} /> : tab === 'domestic' ? <Activity size={12} /> : <LineChart size={12} />}
+            {tab === 'crypto' ? '가상자산' : tab === 'domestic' ? '국내주식' : '해외주식'}
           </button>
         ))}
       </div>
 
-      <div className={styles.chartSection}>
-        {isLoading && !data ? (
-          <div style={{ padding: '1rem' }}>
-            <WidgetSkeleton />
-          </div>
-        ) : error ? (
-          <div className={styles.widgetError}>데이터를 불러올 수 없습니다.</div>
-        ) : data?.chart ? (
-          <>
-            <div
-              className={styles.cryptoHeader}
-              style={{ marginBottom: '0.4rem', padding: '0 0.5rem' }}
-            >
-              <div className={styles.cryptoPrice}>
-                <AssetLogo src={data.chart.image} symbol={data.chart.symbol} size={28} />
-                <span
-                  className={styles.symbol}
-                  style={{ fontSize: '0.9rem', marginLeft: '0.4rem' }}
-                >
-                  {data.chart.symbol}
-                </span>
-                <span
-                  className={styles.price}
-                  style={{
-                    fontSize: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  {activeTab === 'crypto' ? (
-                    <LivePrice
-                      basePrice={data.chart.price}
-                      symbol={data.chart.symbol}
-                      minWidth="150px"
-                    />
-                  ) : (
-                    <span style={{ minWidth: '150px', textAlign: 'right' }}>
-                      {activeTab === 'domestic' ? '₩' : '$'}
-                      {data.chart.price.toLocaleString()}
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              <div
-                className={`${styles.cryptoChangeBadge} ${data.chart.change >= 0 ? styles.plusBg : styles.minusBg
-                  }`}
-                style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}
-              >
-                {data.chart.change.toFixed(2)}%
-              </div>
-            </div>
-
-            <div
+      {/* Control Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px' }}>
+          {INTERVALS.map(i => (
+            <button
+              key={i.value}
+              onClick={() => setIntervalVal(i.value)}
               style={{
-                width: '100%',
-                minHeight: `${CHART_HEIGHT}px`,
-                height: `${CHART_HEIGHT}px`,
-                position: 'relative',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                flexShrink: 0
+                padding: '0.3rem 0.6rem',
+                borderRadius: '6px',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                border: 'none',
+                background: interval === i.value ? 'var(--bg-surface)' : 'transparent',
+                color: interval === i.value ? 'var(--text-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer'
               }}
             >
+              {i.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px' }}>
+          {CHART_STYLES.map(s => (
+            <button
+              key={s.value}
+              onClick={() => setChartStyle(s.value)}
+              style={{
+                padding: '0.3rem 0.6rem',
+                borderRadius: '6px',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                border: 'none',
+                background: chartStyle === s.value ? 'var(--bg-surface)' : 'transparent',
+                color: chartStyle === s.value ? 'var(--text-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer'
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Display */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
+        {isLoading && !data ? <WidgetSkeleton /> : error ? <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>데이터 로드 실패</div> : data?.chart && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <AssetLogo src={data.chart.image} symbol={data.chart.symbol} size={36} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 1000 }}>{data.chart.symbol}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{activeTab === 'crypto' ? 'Binance' : activeTab === 'domestic' ? 'KOSPI' : 'NASDAQ'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: data.chart.change >= 0 ? '#10b981' : '#f43f5e' }}>
+                      {data.chart.change >= 0 ? '+' : ''}{data.chart.change.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <LivePrice
+                basePrice={data.chart.price}
+                symbol={data.chart.symbol}
+                currency={activeTab === 'domestic' ? '₩' : '$'}
+                usdKrw={usdKrw}
+                showDual={activeTab === 'crypto'}
+              />
+            </div>
+
+            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-glass)', background: 'var(--bg-secondary)' }}>
               <TradingViewChart
                 symbol={getCurrentSymbol()}
                 theme={isDark ? 'dark' : 'light'}
                 interval={interval}
                 isCrypto={activeTab === 'crypto'}
+                chartStyle={chartStyle}
               />
             </div>
-          </>
-        ) : (
-          <div className={styles.widgetError}>데이터가 존재하지 않습니다.</div>
+          </div>
         )}
-      </div>
 
-      <div className={styles.rankingList}>
-        {rankingList.map((item: any, idx: number) => (
-          <div
-            key={item.id || item.symbol}
-            className={styles.rankingItem}
-            onClick={() => handleRankingClick(item)}
-          >
-            <div className={styles.rankInfo}>
-              <span className={styles.rankIndex}>{idx + 1}</span>
-              <AssetLogo src={item.image} symbol={item.symbol} size={22} />
-              <span className={styles.rankSymbol}>{item.symbol}</span>
-              <span
-                className={styles.rankName}
-                style={{
-                  fontSize: '0.7rem',
-                  color: 'var(--text-secondary)',
-                  display: 'none'
-                }}
-              >
-                {item.name}
-              </span>
-            </div>
-
-            <div className={styles.rankPriceCol}>
-              <div className={styles.rankPrice}>
-                {activeTab === 'crypto' ? (
-                  <LivePrice basePrice={item.current_price} symbol={item.symbol} />
-                ) : (
-                  <span>
-                    {activeTab === 'domestic' ? '₩' : '$'}
-                    {item.current_price?.toLocaleString() || '---'}
+        {/* Ranking List */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 100px 80px', padding: '0.4rem 0.6rem', fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', borderBottom: '1px solid var(--border-glass)' }}>
+            <span>순위</span>
+            <span>종목</span>
+            <span style={{ textAlign: 'right' }}>가격</span>
+            <span style={{ textAlign: 'right' }}>시가총액/변동</span>
+          </div>
+          {data?.marketCapList?.map((item: any, idx: number) => (
+            <div
+              key={item.symbol}
+              onClick={() => handleRankingClick(item)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '40px 1fr 100px 80px',
+                alignItems: 'center',
+                padding: '0.6rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                border: item.symbol === (activeTab === 'crypto' ? cryptoSymbol : activeTab === 'domestic' ? domesticSymbol : overseasSymbol) ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                background: item.symbol === (activeTab === 'crypto' ? cryptoSymbol : activeTab === 'domestic' ? domesticSymbol : overseasSymbol) ? 'var(--accent-glow)' : 'transparent'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = item.symbol === (activeTab === 'crypto' ? cryptoSymbol : activeTab === 'domestic' ? domesticSymbol : overseasSymbol) ? 'var(--accent-glow)' : 'transparent')}
+            >
+              <span className="tabular-nums" style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{idx + 1}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AssetLogo src={item.image} symbol={item.symbol} size={24} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{item.symbol}</span>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{item.name}</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                <span className="tabular-nums" style={{ fontSize: '0.85rem', fontWeight: 900 }}>
+                  {activeTab === 'domestic' ? formatKRW(item.current_price) : `$${item.current_price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                </span>
+                {activeTab === 'crypto' && (
+                  <span className="tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                    {formatKRW(Math.floor(item.current_price * usdKrw))}
                   </span>
                 )}
               </div>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: item.price_change_percentage_24h >= 0 ? '#10b981' : '#f43f5e' }}>
+                  {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h.toFixed(2)}%
+                </span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                  {formatKoreanNumber(item.market_cap * (activeTab === 'domestic' ? 1 : usdKrw))}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </motion.div>
   );
