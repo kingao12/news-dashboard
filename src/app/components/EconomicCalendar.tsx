@@ -146,7 +146,7 @@ export default function EconomicCalendar() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.65rem', fontWeight: 900, color: event.impact === 'High' ? '#ef4444' : event.impact === 'Medium' ? '#f59e0b' : '#22c55e' }}>
                     <AlertTriangle size={11} />
-                    {IMPACT_LABELS[event.impact]}
+                    {IMPACT_LABELS[event.impact as keyof typeof IMPACT_LABELS]}
                   </div>
                 </div>
 

@@ -19,15 +19,7 @@ import AlertManager from './components/AlertManager';
 import { Sun, Moon, Zap, TrendingUp, BarChart3, Globe, Clock, Calendar, LayoutGrid, Activity, LineChart, Cpu, Wifi, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface NewsItem {
-  id: string;
-  title: string;
-  link: string;
-  pubDate: string;
-  contentSnippet: string;
-  source: string;
-  thumbnail?: string;
-}
+import { NewsItem } from '@/types';
 
 const ZONES = [
   { label: '서울 🇰🇷', zone: 'Asia/Seoul', offset: 9 },
@@ -110,21 +102,9 @@ const GlobalClockTicker = memo(() => {
 
 GlobalClockTicker.displayName = 'GlobalClockTicker';
 
-const categorizeNews = (title: string, content: string) => {
-  const text = (title + ' ' + content).toLowerCase();
-  if (text.includes('금리') || text.includes('인플레') || text.includes('cpi') || text.includes('연준') || text.includes('파월')) return { label: '거시', color: '#8b5cf6' };
-  if (text.includes('비트코인') || text.includes('코인') || text.includes('암호화폐') || text.includes('이더리움')) return { label: '코인', color: '#f59e0b' };
-  if (text.includes('정치') || text.includes('대통령') || text.includes('선거') || text.includes('규제')) return { label: '정치', color: '#ec4899' };
-  if (text.includes('증시') || text.includes('주식') || text.includes('나스닥') || text.includes('실적')) return { label: '경제', color: '#3b82f6' };
-  return { label: '속보', color: '#10b981' };
-};
+// redundant functions removed
 
-const checkImportance = (title: string) => {
-  const text = title.toLowerCase();
-  return text.includes('속보') || text.includes('급락') || text.includes('폭등') || text.includes('경고') || text.includes('단독') || text.includes('최초');
-};
-
-const BreakingNewsTicker = memo(({ news }: { news: any[] }) => {
+const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
   if (!news || news.length === 0) return null;
 
   return (
@@ -246,9 +226,12 @@ export default function Dashboard() {
   }, [theme]);
 
   useEffect(() => {
-    const handleOpenNews = (e: any) => setSelectedNews(e.detail);
-    window.addEventListener('open-news-drawer', handleOpenNews);
-    return () => window.removeEventListener('open-news-drawer', handleOpenNews);
+    const handleOpenNews = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setSelectedNews(customEvent.detail);
+    };
+    window.addEventListener('open-news-drawer', handleOpenNews as EventListener);
+    return () => window.removeEventListener('open-news-drawer', handleOpenNews as EventListener);
   }, []);
 
   const handlePageChange = (p: number) => {
@@ -345,7 +328,7 @@ export default function Dashboard() {
               ))
             ) : news && news.length > 0 ? (
               <AnimatePresence mode="popLayout" initial={false}>
-                {news.map((item: any) => (
+                {news.map((item: NewsItem) => (
                   <NewsCard
                     key={item.id}
                     item={item}

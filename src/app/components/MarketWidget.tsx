@@ -7,6 +7,7 @@ import WidgetSkeleton from './WidgetSkeleton';
 import { Coins, LineChart, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatKoreanCurrency, formatKRW, formatKoreanNumber, formatPercent } from '@/utils/formatters';
+import { MarketData, MarketAsset } from '@/types';
 
 const fetcher = async (url: string) => {
   const r = await fetch(url);
@@ -192,9 +193,10 @@ const LivePrice = ({
     }
     
     // 2. 비가상자산의 경우 기존 브로드캐스트 이벤트 구독 유지
-    const handlePriceUpdate = (e: any) => {
-      if (typeof e.detail?.symbol === 'string' && e.detail.symbol.toUpperCase() === symbol.toUpperCase()) {
-        const newPrice = e.detail.price;
+    const handlePriceUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (typeof customEvent.detail?.symbol === 'string' && customEvent.detail.symbol.toUpperCase() === symbol.toUpperCase()) {
+        const newPrice = customEvent.detail.price;
         if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
         else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
         setPrice(newPrice);
@@ -202,8 +204,8 @@ const LivePrice = ({
         setTimeout(() => setFlashClass(''), 800);
       }
     };
-    window.addEventListener('binance-price-update', handlePriceUpdate);
-    return () => window.removeEventListener('binance-price-update', handlePriceUpdate);
+    window.addEventListener('binance-price-update', handlePriceUpdate as EventListener);
+    return () => window.removeEventListener('binance-price-update', handlePriceUpdate as EventListener);
   }, [symbol]);
 
   useEffect(() => {
@@ -265,13 +267,14 @@ export default function MarketWidget() {
   const [chartStyle, setChartStyle] = useState('1');
   const [isDark, setIsDark] = useState(true);
 
-  const { data: macroData } = useSWR('/api/macro', fetcher);
-  const usdKrw = macroData?.exchangeRates?.find((e: any) => e.pair.includes('USD/KRW'))?.rate || 1400;
+  const { data: macroData } = useSWR<{ exchangeRates: { pair: string, rate: number }[] }>('/api/macro', fetcher);
+  const usdKrw = macroData?.exchangeRates?.find((e) => e.pair.includes('USD/KRW'))?.rate || 1400;
 
   // --- 외부 연동 리스너 (Money Flow -> Market Chart) ---
   useEffect(() => {
-    const handleSymbolChange = (e: any) => {
-      const { symbol, category } = e.detail;
+    const handleSymbolChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { symbol, category } = customEvent.detail;
       if (!symbol) return;
 
       // 카테고리별 매핑 로직
@@ -326,12 +329,12 @@ export default function MarketWidget() {
       ? `/api/stocks?symbol=${domesticSymbol}&interval=${interval}&market=kr`
       : `/api/stocks?symbol=${overseasSymbol}&interval=${interval}&market=us`;
 
-  const { data, error, isLoading } = useSWR(endpoint, fetcher, {
+  const { data, error, isLoading } = useSWR<MarketData>(endpoint, fetcher, {
     keepPreviousData: true,
     refreshInterval: 3000
   });
 
-  const handleRankingClick = useCallback((item: any) => {
+  const handleRankingClick = useCallback((item: MarketAsset) => {
     if (activeTab === 'crypto') setCryptoSymbol(item.symbol);
     else if (activeTab === 'domestic') setDomesticSymbol(item.symbol);
     else setOverseasSymbol(item.symbol);
@@ -474,7 +477,7 @@ export default function MarketWidget() {
             <span style={{ textAlign: 'right' }}>가격</span>
             <span style={{ textAlign: 'right' }}>시가총액/변동</span>
           </div>
-          {data?.marketCapList?.map((item: any, idx: number) => (
+          {data?.marketCapList?.map((item: MarketAsset, idx: number) => (
             <div
               key={item.symbol}
               onClick={() => handleRankingClick(item)}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import translate from '@iamtraction/google-translate';
+import { NewsItem } from '@/types';
 
 const parser = new Parser({
   customFields: { item: ['media:content', 'description'] },
@@ -184,13 +185,13 @@ const getFeedUrls = (country: string, topic: string): FeedTarget[] => {
 };
 
 // ─── Cache ─────────────────────────────────────────────────────────────────────
-const newsCache = new Map<string, { items: any[], total: number, totalPages: number, ts: number }>();
+const newsCache = new Map<string, { items: NewsItem[], total: number, totalPages: number, ts: number }>();
 const CACHE_TTL = 20000; // 20 seconds for ultra-fast refresh
 
 export const revalidate = 0;
 
 // ─── Thumbnail extraction ──────────────────────────────────────────────────────
-const extractThumb = (item: any): string | null => {
+const extractThumb = (item: Parser.Item): string | null => {
   // 1. media:content
   if (item['media:content']?.['$']?.url) return item['media:content']['$'].url;
   // 2. enclosure
@@ -261,14 +262,14 @@ export async function GET(request: Request) {
     };
 
     const results = await Promise.allSettled(feedTargets.map(fetchWithTimeout));
-    let all: any[] = [];
+    let all: NewsItem[] = [];
     for (const r of results) {
-      if (r.status === 'fulfilled') all = all.concat(r.value);
+      if (r.status === 'fulfilled') all = all.concat(r.value as NewsItem[]);
     }
 
     // ── 1. 정밀 중복 제거 및 클러스터링 (Smart Clustering) ───────────────────────────
-    const clusters = new Map<string, any[]>();
-    const processedItems: any[] = [];
+    const clusters = new Map<string, NewsItem[]>();
+    const processedItems: NewsItem[] = [];
 
     all.forEach(item => {
       // 제목 정규화 (유사도 비교용)
@@ -288,12 +289,12 @@ export async function GET(request: Request) {
       } else {
         clusters.set(normalizedTitle, [item]);
         // AI 메타데이터 주입 (Mock AI Pipeline)
-        const enhancedItem = {
+        const enhancedItem: NewsItem = {
           ...item,
           importance: Math.random() > 0.8 ? 'URGENT' : (Math.random() > 0.5 ? 'MAJOR' : 'NORMAL'),
           impactScore: Math.floor(Math.random() * 40) + 60, // 60-100
-          assets: item.title.includes('비트코인') || item.title.includes('BTC') ? ['BTC'] : 
-                  item.title.includes('삼성') ? ['삼성전자'] : 
+          assets: item.title.includes('비트코인') || item.title.includes('BTC') ? ['BTC'] :
+                  item.title.includes('삼성') ? ['삼성전자'] :
                   item.title.includes('미국') || item.title.includes('금리') ? ['S&P500', 'USD'] : [],
           sentiment: item.title.includes('상승') || item.title.includes('돌파') || item.title.includes('급등') ? 'POSITIVE' :
                      item.title.includes('하락') || item.title.includes('우려') || item.title.includes('급락') ? 'NEGATIVE' : 'NEUTRAL'

@@ -11,16 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
-interface NewsItem {
-  id: string;
-  title: string;
-  link: string;
-  pubDate: string;
-  contentSnippet: string;
-  source: string;
-  thumbnail?: string;
-  category?: string;
-}
+import { SentimentData, NewsItem } from '@/types';
 
 const POSITIVE_WORDS = ["상승", "호재", "돌파", "혁신", "성장", "급등", "반등", "최고", "회복", "강세", "bullish", "gain"];
 const NEGATIVE_WORDS = ["하락", "폭락", "우려", "위기", "급락", "제재", "위협", "붕괴", "약세", "bearish", "crash"];
@@ -43,8 +34,8 @@ const isValidImageUrl = (url?: string): boolean => {
 };
 
 const NewsCard = memo(({ item, onClick, isListMode = false }: {
-  item: any; // NewsItem extended with AI metadata
-  onClick: (item: any) => void;
+  item: NewsItem;
+  onClick: (item: NewsItem) => void;
   isListMode?: boolean;
 }) => {
   const [timeAgo, setTimeAgo] = useState('');
@@ -171,7 +162,7 @@ const NewsCard = memo(({ item, onClick, isListMode = false }: {
   );
 });
 
-const ArrowRightIcon = ({ size, style }: any) => (
+const ArrowRightIcon = ({ size, style }: { size: number; style?: React.CSSProperties }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={style}>
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>

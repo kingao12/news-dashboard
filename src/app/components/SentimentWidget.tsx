@@ -4,6 +4,7 @@ import styles from './Widget.module.css';
 import WidgetSkeleton from './WidgetSkeleton';
 import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SentimentData } from '@/types';
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -85,7 +86,7 @@ const MiniBar = ({ label, value }: { label: string; value: number }) => {
 import GlobalRiskRadar from './GlobalRiskRadar';
 
 export default function SentimentWidget() {
-  const { data, error } = useSWR('/api/sentiment', fetcher, { refreshInterval: 30000 });
+  const { data, error } = useSWR<SentimentData>('/api/sentiment', fetcher, { refreshInterval: 30000 });
   if (error) return <div className={styles.widgetError}>공포·탐욕 데이터 로드 실패</div>;
   if (!data) return <WidgetSkeleton />;
 
@@ -133,9 +134,9 @@ export default function SentimentWidget() {
             </motion.div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.4rem' }}>
               <div className={styles.changeBadge}>
-                {crypto.change > 0 ? <TrendingUp size={10} color="#22c55e" /> : crypto.change < 0 ? <TrendingDown size={10} color="#ef4444" /> : <Minus size={10} color="#94a3b8" />}
-                <span style={{ color: crypto.change > 0 ? '#22c55e' : crypto.change < 0 ? '#ef4444' : '#94a3b8' }}>
-                  {crypto.change > 0 ? '+' : ''}{crypto.change}P
+                {crypto.change && crypto.change > 0 ? <TrendingUp size={10} color="#22c55e" /> : crypto.change && crypto.change < 0 ? <TrendingDown size={10} color="#ef4444" /> : <Minus size={10} color="#94a3b8" />}
+                <span style={{ color: crypto.change && crypto.change > 0 ? '#22c55e' : crypto.change && crypto.change < 0 ? '#ef4444' : '#94a3b8' }}>
+                  {crypto.change && crypto.change > 0 ? '+' : ''}{crypto.change}P
                 </span>
               </div>
               <div className={styles.vixTag}>VIX: {data.vix}</div>
