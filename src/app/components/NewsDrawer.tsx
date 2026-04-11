@@ -9,17 +9,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './NewsDrawer.module.css';
 import { memo, useState, useEffect, useRef } from 'react';
+import { NewsItem } from '@/types';
 
-interface NewsItem {
-  id: string;
-  title: string;
-  link: string;
-  pubDate: string;
-  contentSnippet: string;
-  source: string;
-  thumbnail?: string;
-  category?: string;
-}
 
 interface NewsDrawerProps {
   item: NewsItem | null;

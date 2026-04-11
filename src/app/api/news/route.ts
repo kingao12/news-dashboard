@@ -193,11 +193,12 @@ export const revalidate = 0;
 // ─── Thumbnail extraction ──────────────────────────────────────────────────────
 const extractThumb = (item: Parser.Item): string | null => {
   // 1. media:content
-  if (item['media:content']?.['$']?.url) return item['media:content']['$'].url;
+  const mediaContent = (item as any)['media:content'];
+  if (mediaContent?.['$']?.url) return mediaContent['$'].url;
   // 2. enclosure
   if (item.enclosure?.url) return item.enclosure.url;
   // 3. description or content <img> tag
-  const content = item.content || item.contentSnippet || item.description || '';
+  const content = (item as any).content || (item as any).contentSnippet || (item as any).description || '';
   const m = content.match(/<img[^>]+src="([^">]+)"/i);
   if (m) return m[1];
   // 4. Google News specific pattern (encoded image in description)
@@ -243,7 +244,7 @@ export async function GET(request: Request) {
         try {
           const feed = await parser.parseURL(target.url);
           clearTimeout(t);
-          return feed.items.map(item => ({
+          return feed.items.map((item: any) => ({
             id: item.guid || item.link || `${target.sourceName}-${Math.random()}`,
             title: (item.title || '').trim(),
             link: item.link || '',

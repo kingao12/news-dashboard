@@ -44,12 +44,12 @@ const NewsCard = memo(({ item, onClick, isListMode = false }: {
   // AI Metadata
   const sentiment = getSentiment(item.title, item.contentSnippet);
   const SentimentIcon = sentiment.icon;
-  const showImage = isValidImageUrl(item.thumbnail) && !imgError && !isListMode;
+  const showImage = isValidImageUrl(item.thumbnail || undefined) && !imgError && !isListMode;
   const cleanSnippet = item.contentSnippet?.replace(/<[^>]*>?/gm, '') || '';
   
   const isUrgent = item.importance === 'URGENT';
   const isMajor = item.importance === 'MAJOR';
-  const hasClusters = item.clusterCount > 0;
+  const hasClusters = (item.clusterCount || 0) > 0;
 
   useEffect(() => {
     try {

@@ -117,8 +117,8 @@ const StatsBanner = memo(({ trades }: { trades: Trade[] }) => {
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 900 }}>
-          <span style={{ color: '#10b981' }}>{stats?.buyRatio.toFixed(0) || 50}%</span>
-          <span style={{ color: '#f43f5e' }}>{100 - (stats?.buyRatio || 50).toFixed(0)}%</span>
+          <span style={{ color: '#10b981' }}>{(stats?.buyRatio ?? 50).toFixed(0)}%</span>
+          <span style={{ color: '#f43f5e' }}>{(100 - (stats?.buyRatio ?? 50)).toFixed(0)}%</span>
         </div>
       </div>
       <div className="glass-panel" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--bg-secondary)' }}>
