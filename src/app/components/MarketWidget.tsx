@@ -32,7 +32,7 @@ const CHART_STYLES = [
   { label: '바', value: '0' }
 ];
 
-const CHART_HEIGHT = 580; // 차트 시인성을 위해 대폭 상향 조정
+const CHART_HEIGHT = 650; // 차트 시인성을 위해 대폭 상향 조정
 
 const TradingViewChart = memo(
   ({

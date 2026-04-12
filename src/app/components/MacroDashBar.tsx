@@ -6,7 +6,55 @@ import {
   Globe, Clock, 
 } from 'lucide-react';
 import { formatKRW, formatKoreanNumber } from '@/utils/formatters';
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useMemo } from 'react';
+
+// --- Sparkline Component (Trend Line) ---
+const Sparkline = memo(({ change, width = 60, height = 24 }: { change: number; width?: number; height?: number }) => {
+  const isUp = change >= 0;
+  const color = isUp ? '#10b981' : '#f43f5e';
+  
+  // 가상의 트렌드 포인트 생성 (실제 시계열 데이터 없을 때 시각적 효과용)
+  const points = useMemo(() => {
+    const pts = [0.5];
+    const step = 6;
+    let last = 0.5;
+    for (let i = 0; i < step; i++) {
+        const rand = (Math.random() - 0.5) * 0.3;
+        const trend = isUp ? 0.05 : -0.05;
+        last = Math.max(0.1, Math.min(0.9, last + rand + trend));
+        pts.push(last);
+    }
+    return pts;
+  }, [isUp]);
+
+  const path = points.map((p, i) => `${(i / (points.length - 1)) * width},${height - p * height}`).join(' L ');
+
+  return (
+    <svg width={width} height={height} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={`macro-grad-${isUp ? 'up' : 'down'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M 0,${height - points[0] * height} L ${path}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M 0,${height - points[0] * height} L ${path} L ${width},${height} L 0,${height} Z`}
+        fill={`url(#macro-grad-${isUp ? 'up' : 'down'})`}
+        stroke="none"
+      />
+    </svg>
+  );
+});
+
+Sparkline.displayName = 'Sparkline';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -30,8 +78,13 @@ const KPICard = memo(({
           </span>
         </div>
         <div className={styles.cardBody}>
-          <div className={styles.mainValue}>{value}</div>
-          {sub && <div className={styles.subValue}>{sub}</div>}
+          <div className={styles.valueGroup}>
+            <div className={styles.mainValue}>{value}</div>
+            {sub && <div className={styles.subValue}>{sub}</div>}
+          </div>
+          <div className={styles.sparklineArea}>
+            <Sparkline change={change} width={50} height={20} />
+          </div>
         </div>
       </div>
     </div>

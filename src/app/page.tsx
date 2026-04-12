@@ -321,7 +321,7 @@ export default function Dashboard() {
 
           {error && <div className={styles.errorBanner}>{error}</div>}
 
-          <div className={viewMode === 'card' ? styles.newsGrid : styles.newsGridList}>
+          <motion.div layout className={viewMode === 'card' ? styles.newsGrid : styles.newsGridList}>
             {loading && !isRefreshing ? (
               Array.from({ length: 12 }).map((_, i) => (
                 <NewsSkeleton key={`skeleton-${i}`} isListMode={viewMode === 'list'} />
