@@ -32,7 +32,7 @@ const CHART_STYLES = [
   { label: '바', value: '0' }
 ];
 
-const CHART_HEIGHT = 650; // 차트 시인성을 위해 대폭 상향 조정
+const CHART_HEIGHT = 780; // 차트 시인성을 위해 대폭 상향 조정 (사용자 요구사항 반영)
 
 const TradingViewChart = memo(
   ({
@@ -149,13 +149,15 @@ const LivePrice = ({
   symbol,
   currency = '$',
   usdKrw = 1,
-  showDual = false
+  showDual = false,
+  mode = 'KRW'
 }: {
   basePrice: number;
   symbol: string;
   currency?: string;
   usdKrw?: number;
   showDual?: boolean;
+  mode?: 'KRW' | 'USD';
 }) => {
   const [price, setPrice] = useState(basePrice);
   const [flashClass, setFlashClass] = useState('');
@@ -164,13 +166,11 @@ const LivePrice = ({
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // 1. Binance WebSocket 연결 (가상자산인 경우)
-    if (symbol && !symbol.includes(':')) { // 가상자산은 보통 symbol만 전달됨 (예: BTC)
+    if (symbol && !symbol.includes(':')) {
       const cleanSymbol = symbol.toLowerCase().replace('usdt', '');
       const wsUrl = `wss://stream.binance.com:9443/ws/${cleanSymbol}usdt@ticker`;
       
       if (wsRef.current) wsRef.current.close();
-      
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -179,7 +179,6 @@ const LivePrice = ({
         const data = JSON.parse(event.data);
         const newPrice = parseFloat(data.c);
         if (newPrice !== prevPrice.current) {
-          // Dispatch event for other listeners (like the ranking list)
           window.dispatchEvent(new CustomEvent('market-asset-price-update', { 
             detail: { symbol: symbol.toUpperCase(), price: newPrice } 
           }));
@@ -190,62 +189,43 @@ const LivePrice = ({
           setTimeout(() => setFlashClass(''), 800);
         }
       };
-      
       ws.onclose = () => setIsLive(false);
-      ws.onerror = () => setIsLive(false);
-
       return () => ws.close();
     }
-    
-    // 2. 비가상자산의 경우 기존 브로드캐스트 이벤트 구독 유지
-    const handlePriceUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (typeof customEvent.detail?.symbol === 'string' && customEvent.detail.symbol.toUpperCase() === symbol.toUpperCase()) {
-        const newPrice = customEvent.detail.price;
-        if (newPrice > prevPrice.current) setFlashClass('price-flash-up');
-        else if (newPrice < prevPrice.current) setFlashClass('price-flash-down');
-        setPrice(newPrice);
-        prevPrice.current = newPrice;
-        setTimeout(() => setFlashClass(''), 800);
-      }
-    };
-    window.addEventListener('binance-price-update', handlePriceUpdate as EventListener);
-    return () => window.removeEventListener('binance-price-update', handlePriceUpdate as EventListener);
   }, [symbol]);
 
   useEffect(() => {
-    // SWR 데이터 갱신 시 보정
-    if (basePrice > 0 && Math.abs(basePrice - price) / basePrice > 0.05) {
+    if (basePrice > 0 && Math.abs(basePrice - price) / basePrice > 0.1) {
       setPrice(basePrice);
       prevPrice.current = basePrice;
     }
   }, [basePrice]);
 
-  const primaryPrice = currency === '$' 
-    ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` 
-    : formatKRW(price);
+  const isUSD = mode === 'USD';
   
-  const secondaryPrice = showDual && currency === '$' 
-    ? formatKRW(Math.floor(price * usdKrw)) 
-    : null;
+  // 가격 계산 (Binance USD 기반으로 환산)
+  const displayUSD = price;
+  const displayKRW = Math.floor(price * usdKrw);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         {isLive && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '1px 5px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '4px' }}>
-            <span style={{ width: '4px', height: '4px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
-            <span style={{ fontSize: '0.6rem', color: '#22c55e', fontWeight: 900 }}>LIVE</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '2px 6px', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '6px' }}>
+            <span style={{ width: '5px', height: '5px', background: '#22c55e', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+            <span style={{ fontSize: '0.65rem', color: '#22c55e', fontWeight: 1000 }}>LIVE</span>
           </div>
         )}
-        <span className={`${flashClass} tabular-nums`} style={{ fontSize: '1.4rem', fontWeight: 1000, transition: 'color 0.4s ease' }}>
-          {primaryPrice}
+        <span className={`${flashClass} tabular-nums`} style={{ fontSize: '1.75rem', fontWeight: 1000, transition: 'color 0.4s ease', color: mode === 'KRW' ? 'var(--text-primary)' : 'var(--accent-primary)' }}>
+          {isUSD ? `$${displayUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(displayKRW)}
         </span>
       </div>
-      {secondaryPrice && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-          {secondaryPrice}
-        </span>
+      {showDual && (
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', opacity: 0.8 }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+             {isUSD ? formatKRW(displayKRW) : `$${displayUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          </span>
+        </div>
       )}
     </div>
   );
@@ -267,11 +247,12 @@ const AssetLogo = memo(({ src, symbol, size = 22 }: { src?: string; symbol: stri
 
 AssetLogo.displayName = 'AssetLogo';
 
-const RankingLivePrice = memo(({ basePrice, symbol, currency = '$', usdKrw = 1 }: { 
+const RankingLivePrice = memo(({ basePrice, symbol, currency = '$', usdKrw = 1, mode = 'KRW' }: { 
   basePrice: number; 
   symbol: string; 
   currency?: string; 
   usdKrw?: number;
+  mode?: 'KRW' | 'USD';
 }) => {
   const [price, setPrice] = useState(basePrice);
   const [flashClass, setFlashClass] = useState('');
@@ -293,69 +274,63 @@ const RankingLivePrice = memo(({ basePrice, symbol, currency = '$', usdKrw = 1 }
     return () => window.removeEventListener('market-asset-price-update', handler);
   }, [symbol]);
 
-  useEffect(() => {
-    if (basePrice !== price && Math.abs(basePrice - price) / basePrice > 0.05) {
-      setPrice(basePrice);
-      prevPrice.current = basePrice;
-    }
-  }, [basePrice]);
+  const displayUSD = price;
+  const displayKRW = Math.floor(price * usdKrw);
 
   return (
     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
       <span className={`${flashClass} tabular-nums`} style={{ fontSize: '0.85rem', fontWeight: 900, transition: 'color 0.4s ease' }}>
-        {currency === '$' ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(price)}
+        {mode === 'USD' ? `$${displayUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : formatKRW(displayKRW)}
       </span>
-      {currency === '$' && (
-        <span className="tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-          {formatKRW(Math.floor(price * usdKrw))}
-        </span>
-      )}
+      <span className="tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+        {mode === 'USD' ? formatKRW(displayKRW) : `$${displayUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+      </span>
     </div>
   );
 });
 
 RankingLivePrice.displayName = 'RankingLivePrice';
 
-// --- Sparkline Component (Trend Line) ---
-const Sparkline = memo(({ change, width = 60, height = 24 }: { change: number; width?: number; height?: number }) => {
-  const isUp = change >= 0;
-  const color = isUp ? '#10b981' : '#f43f5e';
-  
-  // 가상의 트렌드 포인트 생성 (실제 데이터 없을 때 시각적 효과용)
+// --- Sparkline Component (Real-time Trend Line) ---
+const Sparkline = memo(({ data, width = 80, height = 30, color }: { data: number[]; width?: number; height?: number; color?: string }) => {
   const points = useMemo(() => {
-    const pts = [0.5];
-    const step = 6;
-    let last = 0.5;
-    for (let i = 0; i < step; i++) {
-      const rand = (Math.random() - 0.5) * 0.3;
-      const trend = isUp ? 0.05 : -0.05;
-      last = Math.max(0.1, Math.min(0.9, last + rand + trend));
-      pts.push(last);
-    }
-    return pts;
-  }, [isUp]);
+    if (!data || data.length < 2) return [];
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min === 0 ? 1 : max - min;
+    
+    return data.map((v, i) => ({
+      x: (i / (data.length - 1)) * width,
+      y: height - ((v - min) / range) * height
+    }));
+  }, [data, width, height]);
 
-  const path = points.map((p, i) => `${(i / (points.length - 1)) * width},${height - p * height}`).join(' L ');
+  if (points.length < 2) return <div style={{ width, height }} />;
+
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
+  const strokeColor = color || (data[data.length - 1] >= data[0] ? '#10b981' : '#f43f5e');
 
   return (
     <svg width={width} height={height} style={{ overflow: 'visible' }}>
       <defs>
-        <linearGradient id={`grad-${isUp}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        <linearGradient id={`grad-${strokeColor}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path
-        d={`M 0,${height - points[0] * height} L ${path}`}
+      <motion.path
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        d={path}
         fill="none"
-        stroke={color}
+        stroke={strokeColor}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d={`M 0,${height - points[0] * height} L ${path} L ${width},${height} L 0,${height} Z`}
-        fill={`url(#grad-${isUp})`}
+        d={`${path} L ${width},${height} L 0,${height} Z`}
+        fill={`url(#grad-${strokeColor})`}
         stroke="none"
       />
     </svg>
@@ -372,9 +347,28 @@ export default function MarketWidget() {
   const [interval, setIntervalVal] = useState('1m');
   const [chartStyle, setChartStyle] = useState('1');
   const [isDark, setIsDark] = useState(true);
+  const [currencyMode, setCurrencyMode] = useState<'USD' | 'KRW'>('KRW');
+  const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
 
   const { data: macroData } = useSWR<{ exchangeRates: { pair: string, rate: number }[] }>('/api/macro', fetcher);
   const usdKrw = macroData?.exchangeRates?.find((e) => e.pair.includes('USD/KRW'))?.rate || 1400;
+
+  // 실시간 히스토리 업데이트 리스너
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customE = e as CustomEvent;
+      const { symbol, price } = customE.detail;
+      if (!symbol || !price) return;
+
+      setPriceHistory(prev => {
+        const history = prev[symbol] || [];
+        const newHistory = [...history, price].slice(-40); // 최근 40개 포인트 유지
+        return { ...prev, [symbol]: newHistory };
+      });
+    };
+    window.addEventListener('market-asset-price-update', handler);
+    return () => window.removeEventListener('market-asset-price-update', handler);
+  }, []);
 
   // --- 외부 연동 리스너 (Money Flow -> Market Chart) ---
   useEffect(() => {
@@ -513,6 +507,28 @@ export default function MarketWidget() {
         </div>
 
         <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px' }}>
+          {(['KRW', 'USD'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setCurrencyMode(m)}
+              style={{
+                padding: '0.3rem 0.8rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 1000,
+                border: 'none',
+                background: currencyMode === m ? 'var(--accent-primary)' : 'transparent',
+                color: currencyMode === m ? '#000' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px' }}>
           {CHART_STYLES.map(s => (
             <button
               key={s.value}
@@ -560,6 +576,7 @@ export default function MarketWidget() {
                 currency={activeTab === 'domestic' ? '₩' : '$'}
                 usdKrw={usdKrw}
                 showDual={activeTab === 'crypto'}
+                mode={currencyMode}
               />
             </div>
 
@@ -611,13 +628,14 @@ export default function MarketWidget() {
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Sparkline change={item.price_change_percentage_24h} />
+                <Sparkline data={priceHistory[item.symbol] || [item.current_price, item.current_price * (1 + item.price_change_percentage_24h / 100)]} />
               </div>
               <RankingLivePrice 
                 basePrice={item.current_price} 
                 symbol={item.symbol} 
                 currency={activeTab === 'domestic' ? '₩' : '$'}
                 usdKrw={usdKrw}
+                mode={currencyMode}
               />
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.7rem', fontWeight: 900, color: item.price_change_percentage_24h >= 0 ? '#10b981' : '#f43f5e' }}>
