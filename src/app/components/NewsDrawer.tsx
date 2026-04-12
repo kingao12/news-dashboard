@@ -24,7 +24,11 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  if (!item) return null;
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleAskAI = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,9 +44,9 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          newsId: item.id,
+          newsId: item?.id,
           message: inputValue,
-          context: { title: item.title, assets: (item as any).assets }
+          context: { title: item?.title, assets: (item as any)?.assets }
         })
       });
       const data = await res.json();
@@ -55,14 +59,10 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
     }
   };
 
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+  if (!item) return null;
 
   return (
-    <AnimatePresence>
+    <>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -78,6 +78,7 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
         transition={{ type: 'spring', damping: 28, stiffness: 220 }}
         className={styles.sidebar}
       >
+
         {/* Intelligence Header */}
         <div className={styles.headerControl}>
           <div className={styles.headerLeft}>
@@ -221,7 +222,7 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 });
 

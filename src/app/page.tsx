@@ -345,7 +345,7 @@ export default function Dashboard() {
                 </button>
               </div>
             )}
-          </div>
+          </motion.div>
 
           {!loading && totalPages > 1 && (
             <div className={styles.pagination}>
@@ -467,10 +467,14 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      <NewsDrawer
-        item={selectedNews}
-        onClose={() => setSelectedNews(null)}
-      />
+      <AnimatePresence>
+        {selectedNews && (
+          <NewsDrawer
+            item={selectedNews}
+            onClose={() => setSelectedNews(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <AlertManager />
     </main>
