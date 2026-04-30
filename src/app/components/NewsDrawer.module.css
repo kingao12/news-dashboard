@@ -129,7 +129,7 @@
 
 /* --- Intelligence Matrix --- */
 .intelligenceBox {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6));
+  background: var(--bg-secondary);
   border: 1px solid var(--border-glass);
   border-radius: 20px;
   padding: 1.75rem;
@@ -633,7 +633,7 @@
 /* --- Footer --- */
 .drawerFooter {
   padding: 1.75rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   border-top: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;

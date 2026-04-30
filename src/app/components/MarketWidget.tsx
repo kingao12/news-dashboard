@@ -16,6 +16,9 @@ import {
   selectCurrency,
   selectExchangeRate,
 } from '@/store/useMarketStore';
+import dynamic from 'next/dynamic';
+
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 // ─────────────────────────────────────────────
 // 포매터 헬퍼
@@ -142,6 +145,56 @@ const TradingViewChart = memo(
   }
 );
 TradingViewChart.displayName = 'TradingViewChart';
+
+// ─────────────────────────────────────────────
+// ApexCharts — 국내주식 전용
+// ─────────────────────────────────────────────
+const ApexCandleChart = memo(({ seriesData, theme }: { seriesData: any[], theme: string }) => {
+  const options: any = {
+    chart: {
+      type: 'candlestick',
+      background: 'transparent',
+      toolbar: { show: false },
+      animations: { enabled: false }
+    },
+    theme: { mode: theme === 'dark' ? 'dark' : 'light' },
+    plotOptions: {
+      candlestick: {
+        colors: {
+          upward: '#f43f5e', // 한국식: 상승이 빨강
+          downward: '#3b82f6' // 하락이 파랑
+        }
+      }
+    },
+    xaxis: {
+      type: 'datetime',
+      labels: { style: { colors: 'var(--text-secondary)' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      tooltip: { enabled: false }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: 'var(--text-secondary)' },
+        formatter: (val: number) => `₩${val.toLocaleString()}`
+      }
+    },
+    grid: {
+      borderColor: 'var(--border-glass)',
+      strokeDashArray: 4,
+    },
+    tooltip: {
+      theme: theme,
+    }
+  };
+
+  return (
+    <div style={{ width: '100%', height: '500px', background: 'var(--bg-secondary)', borderRadius: '12px', padding: '0.5rem 0' }}>
+      <ReactApexChart options={options} series={[{ data: seriesData || [] }]} type="candlestick" height="100%" />
+    </div>
+  );
+});
+ApexCandleChart.displayName = 'ApexCandleChart';
 
 // ─────────────────────────────────────────────
 // Sparkline — store history 직접 구독
@@ -490,15 +543,20 @@ export default function MarketWidget() {
               />
             </div>
 
-            {/* TradingView 차트 — Binance 심볼 기준 */}
-            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-glass)', background: 'var(--bg-secondary)' }}>
-              <TradingViewChart
-                symbol={tvSymbol}
-                theme={isDark ? 'dark' : 'light'}
-                interval={interval}
-                isCrypto={activeTab === 'crypto'}
-                chartStyle={chartStyle}
-              />
+            {/* ── 메인 차트 ── */}
+            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+              {activeTab === 'domestic' && data?.chart?.series ? (
+                 <ApexCandleChart seriesData={data.chart.series} theme={theme} />
+              ) : (
+                <TradingViewChart
+                  key={activeSymbol + interval + chartStyle + activeTab}
+                  symbol={tvSymbol}
+                  theme={theme}
+                  interval={interval}
+                  isCrypto={activeTab === 'crypto'}
+                  chartStyle={chartStyle}
+                />
+              )}
             </div>
           </div>
         )}
@@ -545,8 +603,15 @@ export default function MarketWidget() {
                     height={26}
                   />
                 </div>
-                {/* RankingLivePrice: store 구독 */}
-                <RankingLivePrice symbol={item.symbol} basePrice={item.current_price} />
+                <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 800 }}>
+                  <div className={styles.itemPrice}>
+                    {activeTab === 'domestic' ? fmtKRW(item.current_price) : `$${formatVal(item.current_price)}`}
+                  </div>
+                  <div className={styles.itemMarketCap}>
+                    {activeTab === 'domestic' ? `₩${(item.market_cap / 1000000000000).toFixed(1)}조` : `₩${(item.market_cap / 100000000).toFixed(0)}억`}
+                  </div>
+                  <RankingLivePrice symbol={item.symbol} basePrice={item.current_price} />
+                </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: item.price_change_percentage_24h >= 0 ? '#10b981' : '#f43f5e' }}>
                     {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h.toFixed(2)}%
