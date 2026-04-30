@@ -293,9 +293,11 @@ const MoneyFlowSummary = memo(() => {
                           const absVal = Math.abs(item.value);
                           // 면적을 값의 제곱근에 비례하게 설정 (Treemap 느낌)
                           const sizeRatio = Math.sqrt(absVal / 20000); 
-                          const bgIntensity = Math.min(0.15 + (absVal / 18000), 0.95);
-                          const color = isOut ? `rgba(244, 63, 94, ${bgIntensity})` : `rgba(16, 185, 129, ${bgIntensity})`;
-                          const glow = isOut ? `0 0 15px rgba(244, 63, 94, ${bgIntensity * 0.3})` : `0 0 15px rgba(16, 185, 129, ${bgIntensity * 0.3})`;
+                          // 대비 극대화를 위해 최소 강도 상향 및 색상 채도 최적화
+                          const bgIntensity = Math.min(0.25 + (absVal / 15000), 1);
+                          // 더 선명한 색상 (Red/Green 대신 전용 터미널 컬러 사용)
+                          const color = isOut ? `rgba(255, 30, 80, ${bgIntensity})` : `rgba(0, 230, 130, ${bgIntensity})`;
+                          const glow = isOut ? `0 0 20px rgba(255, 30, 80, ${bgIntensity * 0.4})` : `0 0 20px rgba(0, 230, 130, ${bgIntensity * 0.4})`;
                           
                           return (
                             <motion.div 
@@ -305,12 +307,13 @@ const MoneyFlowSummary = memo(() => {
                               transition={{ delay: i * 0.05 }}
                               className={styles.heatmapBox}
                               onClick={() => handleFlowClick(item)}
-                              whileHover={{ scale: 1.02, zIndex: 10, brightness: 1.2 }}
+                              whileHover={{ scale: 1.05, zIndex: 10, filter: 'brightness(1.3) saturate(1.5)' }}
                               style={{ 
                                 flex: sizeRatio, 
                                 backgroundColor: color,
                                 boxShadow: glow,
-                                border: `1px solid ${isOut ? 'rgba(244, 63, 94, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                                border: `1px solid ${isOut ? 'rgba(255, 30, 80, 0.5)' : 'rgba(0, 230, 130, 0.5)'}`,
+                                color: bgIntensity > 0.6 ? '#000' : '#fff',
                                 minHeight: `${80 + sizeRatio * 60}px`
                               }}
                             >

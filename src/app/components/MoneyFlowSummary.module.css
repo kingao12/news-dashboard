@@ -494,21 +494,22 @@
 .heatLabel {
   font-size: 0.95rem;
   font-weight: 1000;
-  color: var(--text-primary);
+  color: inherit;
   margin-bottom: 0.25rem;
 }
 
 .heatValue {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 1000;
+  color: inherit;
   font-family: var(--font-mono);
 }
 
 .heatSymbol {
   font-size: 0.6rem;
   font-weight: 900;
-  color: var(--text-secondary);
+  color: inherit;
+  opacity: 0.8;
   margin-top: 0.5rem;
   text-transform: uppercase;
 }
@@ -528,10 +529,11 @@
 
 .legendBar {
   flex: 1;
-  max-width: 200px;
-  height: 6px;
-  background: linear-gradient(90deg, #f43f5e 0%, #334155 50%, #10b981 100%);
-  border-radius: 3px;
+  max-width: 240px;
+  height: 8px;
+  background: linear-gradient(90deg, #ff1e50 0%, #334155 50%, #00e682 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .flowNet {
