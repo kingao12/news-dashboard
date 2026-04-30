@@ -87,7 +87,10 @@ const GlobalClockTicker = memo(() => {
             className={`${styles.worldClockCard} ${styles[`priority${z.priority}`]}`}
           >
              <div className={styles.clockCardHeader}>
-                <span className={styles.cityLabel}>{z.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                   <div className={styles.statusDotActive} style={{ width: '4px', height: '4px' }} />
+                   <span className={styles.cityLabel}>{z.label}</span>
+                </div>
                 <div className={`${styles.marketStatus} ${isOpen ? styles.marketOpen : styles.marketClosed}`}>
                    {isOpen ? 'OPEN' : 'CLOSED'}
                 </div>

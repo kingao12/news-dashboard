@@ -169,16 +169,16 @@ export default function MacroDashBar() {
           </div>
           <div className={styles.headerTitleGroup}>
             <h3 className={styles.terminalTitle}>글로벌 마켓 인플럭스</h3>
-            <div className={styles.liveIndicator}>
-              <div className={styles.liveDot} />
-              <span>LIVE REAL-TIME STREAM</span>
-            </div>
           </div>
         </div>
         <div className={styles.headerRight}>
+          <div className={styles.liveIndicator} style={{ marginRight: '1rem' }}>
+            <div className={styles.liveDot} />
+            <span>REAL-TIME</span>
+          </div>
           <div className={styles.updateBadge}>
             <Clock size={12} />
-            <span>마지막 업데이트: {lastUpdated}</span>
+            <span>{lastUpdated}</span>
           </div>
         </div>
       </div>
