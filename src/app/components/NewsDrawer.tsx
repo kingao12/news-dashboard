@@ -276,35 +276,39 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
 });
 
 function ImpactCard({ label, value, status }: { label: string, value: string, status: 'up' | 'down' | 'neutral' }) {
-  const Icon = status === 'up' ? TrendingUp : status === 'down' ? TrendingDown : Minus;
+  const Icon = status === 'up' ? TrendingUp : status === 'down' ? TrendingDown : BarChart3;
   const colorClass = styles[status];
+  const statusText = status === 'up' ? 'BULLISH' : status === 'down' ? 'BEARISH' : 'STABLE';
   
   const handleClick = () => {
-    // 뉴스 인사이트에서 자산 클릭 시 글로벌 차트 심볼 변경 이벤트 발생
     const symbolMap: Record<string, string> = {
       '나스닥 선물': 'NASDAQ100',
       '비트코인': 'BTCUSDT',
       '원/달러 환율': 'FX_IDC:USDKRW',
-      '미 국채 10년': 'TVC:US10Y'
+      '미 국채 10년': 'TVC:US10Y',
+      '시장 전반 (S&P500)': 'SPX',
+      '변동성 지수 (VIX)': 'VIX'
     };
     
     const targetSymbol = symbolMap[label];
     if (targetSymbol) {
       window.dispatchEvent(new CustomEvent('change-market-symbol', { 
-        detail: { symbol: targetSymbol, category: label.includes('나스닥') ? 'stock' : 'crypto' } 
+        detail: { symbol: targetSymbol, category: label.includes('나스닥') || label.includes('S&P') ? 'stock' : 'crypto' } 
       }));
     }
   };
   
   return (
-    <div className={`${styles.impactCard} ${colorClass}`} onClick={handleClick} style={{ cursor: 'pointer' }}>
-      <span className={styles.impactLabel}>{label}</span>
+    <div className={`${styles.impactCard} ${colorClass}`} onClick={handleClick}>
+      <div className={styles.impactLabel}>{label}</div>
       <div className={styles.impactValRow}>
-        <Icon size={14} />
+        <div className={styles.iconBox}>
+          <Icon size={18} />
+        </div>
         <span className={styles.impactValue}>{value}</span>
       </div>
-      <div className={styles.impactStatus}>{status.toUpperCase()}</div>
-      <div className={styles.clickHint}>CHART VIEW</div>
+      <div className={styles.impactStatus}>{statusText}</div>
+      <div className={styles.clickHint}>ANALYSIS CHART</div>
     </div>
   );
 }
