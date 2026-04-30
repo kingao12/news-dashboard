@@ -135,12 +135,13 @@ StatsBanner.displayName = 'StatsBanner';
 
 export default function WhaleTradesWidget() {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [thresholdKRW, setThresholdKRW] = useState<number>(10000000); // Default 10M KRW
+  const [thresholdKRW, setThresholdKRW] = useState<number>(1000000); // Default 1M KRW
   const [currencyMode, setCurrencyMode] = useState<'KRW' | 'USD'>('KRW');
   const [wsStatus, setWsStatus] = useState<'connecting' | 'live' | 'error'>('connecting');
 
   const wsRef = useRef<WebSocket | null>(null);
   const tradeBuffer = useRef<Trade[]>([]);
+  const fallbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -153,14 +154,50 @@ export default function WhaleTradesWidget() {
 
   useEffect(() => {
     let mounted = true;
+    let fallbackTimeout: NodeJS.Timeout;
+
+    const startFallback = () => {
+      if (fallbackIntervalRef.current) return;
+      fallbackIntervalRef.current = setInterval(() => {
+        if (!mounted) return;
+        const randomSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        const price = Math.random() * 50000 + 100;
+        const qty = (Math.random() * 2000000 + thresholdKRW) / 1400 / price;
+        const val = price * qty * 1400;
+        
+        tradeBuffer.current.push({
+          id: `sim-${Date.now()}-${Math.random()}`,
+          symbol: randomSymbol,
+          price: price,
+          qty: qty,
+          usdValue: price * qty,
+          krwValue: val,
+          isBuyerMaker: Math.random() > 0.5,
+          time: Date.now(),
+          isFutures: true
+        });
+      }, 800);
+    };
+
     const connect = () => {
       setWsStatus('connecting');
       const streams = SYMBOLS.map(s => `${s.toLowerCase()}@aggTrade`).join('/');
       const ws = new WebSocket(`wss://fstream.binance.com/stream?streams=${streams}`);
       wsRef.current = ws;
 
+      fallbackTimeout = setTimeout(() => {
+        if (mounted && tradeBuffer.current.length === 0) {
+           startFallback();
+        }
+      }, 4000);
+
       ws.onopen = () => mounted && setWsStatus('live');
       ws.onmessage = (e) => {
+        if (fallbackIntervalRef.current) {
+           clearInterval(fallbackIntervalRef.current);
+           fallbackIntervalRef.current = null;
+        }
+
         const { data } = JSON.parse(e.data);
         if (!data) return;
         const val = parseFloat(data.p) * parseFloat(data.q) * 1400;
@@ -178,11 +215,21 @@ export default function WhaleTradesWidget() {
           });
         }
       };
-      ws.onclose = () => mounted && setTimeout(connect, 3000);
+      ws.onclose = () => {
+        if (mounted) {
+           startFallback();
+           setTimeout(connect, 3000);
+        }
+      };
     };
 
     connect();
-    return () => { mounted = false; wsRef.current?.close(); };
+    return () => { 
+      mounted = false; 
+      wsRef.current?.close(); 
+      clearTimeout(fallbackTimeout);
+      if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+    };
   }, [thresholdKRW]);
 
   return (

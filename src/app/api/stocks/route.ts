@@ -12,7 +12,19 @@ const BASE_STOCKS = [
   { symbol: 'LLY', name: 'Eli Lilly & Co.', basePrice: 785.45, marketCap: 745000000000, logo: 'https://logo.clearbit.com/lilly.com' },
   { symbol: 'TSM', name: 'TSMC', basePrice: 139.62, marketCap: 724000000000, logo: 'https://logo.clearbit.com/tsmc.com' },
   { symbol: 'AVGO', name: 'Broadcom Inc.', basePrice: 1308.72, marketCap: 606000000000, logo: 'https://logo.clearbit.com/broadcom.com' },
-  { symbol: 'FIGR_HELOC', name: 'Figure Acquisition', basePrice: 10.25, marketCap: 250000000, logo: 'https://logo.clearbit.com/figure.com' }
+];
+
+const KR_STOCKS = [
+  { symbol: '005930', name: '삼성전자', basePrice: 83000, marketCap: 495000000000000, logo: 'https://logo.clearbit.com/samsung.com' },
+  { symbol: '000660', name: 'SK하이닉스', basePrice: 165000, marketCap: 120000000000000, logo: 'https://logo.clearbit.com/skhynix.com' },
+  { symbol: '373220', name: 'LG에너지솔루션', basePrice: 400000, marketCap: 93000000000000, logo: 'https://logo.clearbit.com/lgensol.com' },
+  { symbol: '207940', name: '삼성바이오로직스', basePrice: 820000, marketCap: 58000000000000, logo: 'https://logo.clearbit.com/samsungbiologics.com' },
+  { symbol: '005380', name: '현대차', basePrice: 240000, marketCap: 51000000000000, logo: 'https://logo.clearbit.com/hyundai.com' },
+  { symbol: '000270', name: '기아', basePrice: 110000, marketCap: 44000000000000, logo: 'https://logo.clearbit.com/kia.com' },
+  { symbol: '068270', name: '셀트리온', basePrice: 180000, marketCap: 39000000000000, logo: 'https://logo.clearbit.com/celltrion.com' },
+  { symbol: '005490', name: 'POSCO홀딩스', basePrice: 400000, marketCap: 34000000000000, logo: 'https://logo.clearbit.com/posco.co.kr' },
+  { symbol: '035420', name: 'NAVER', basePrice: 190000, marketCap: 30000000000000, logo: 'https://logo.clearbit.com/naver.com' },
+  { symbol: '035720', name: '카카오', basePrice: 53000, marketCap: 23000000000000, logo: 'https://logo.clearbit.com/kakaocorp.com' },
 ];
 
 const stocksCache: Map<string, { data: any, timestamp: number }> = new Map();
@@ -20,9 +32,12 @@ const CACHE_TTL = 10000; // 10 seconds
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const reqSymbol = searchParams.get('symbol') || 'AAPL';
+  const market = searchParams.get('market') || 'us';
+  const activeList = market === 'kr' ? KR_STOCKS : BASE_STOCKS;
+  const defaultSymbol = market === 'kr' ? '005930' : 'AAPL';
+  const reqSymbol = searchParams.get('symbol') || defaultSymbol;
   const interval = searchParams.get('interval') || '1m';
-  const cacheKey = `${reqSymbol}-${interval}`;
+  const cacheKey = `${reqSymbol}-${interval}-${market}`;
 
   const now = Date.now();
   const cached = stocksCache.get(cacheKey);
@@ -88,14 +103,14 @@ export async function GET(request: Request) {
       return series;
     };
 
-    const targetStock = BASE_STOCKS.find(s => s.symbol === reqSymbol) || BASE_STOCKS[0];
+    const targetStock = activeList.find(s => s.symbol === reqSymbol) || activeList[0];
     const chartSeries = generateStableSeries(targetStock, 150);
     const lastCandle = chartSeries[chartSeries.length - 1].y;
     const currentPrice = lastCandle[3];
     const firstPrice = chartSeries[0].y[0];
     const changePercentage = ((currentPrice - firstPrice) / firstPrice) * 100;
 
-    const marketCapList = BASE_STOCKS.map(stock => {
+    const marketCapList = activeList.map(stock => {
       const stockSeries = generateStableSeries(stock, 150);
       const sPrice = stockSeries[stockSeries.length - 1].y[3];
       const sFirst = stockSeries[0].y[0];

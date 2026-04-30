@@ -20,17 +20,20 @@ import { Sun, Moon, Zap, TrendingUp, BarChart3, Globe, Clock, Calendar, LayoutGr
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { NewsItem } from '@/types';
+import { useMarketData } from '@/hooks/useMarketData';
+import BreakingNewsBanner from './components/BreakingNewsBanner';
+import { useUIStore } from '@/store/useUIStore';
 
 const ZONES = [
-  { label: '서울 🇰🇷', zone: 'Asia/Seoul', offset: 9 },
-  { label: '베이징 🇨🇳', zone: 'Asia/Shanghai', offset: 8 },
-  { label: '두바이 🇦🇪', zone: 'Asia/Dubai', offset: 4 },
-  { label: '이란 🇮🇷', zone: 'Asia/Tehran', offset: 3.5 },
-  { label: '모스크바 🇷🇺', zone: 'Europe/Moscow', offset: 3 },
-  { label: '이스라엘 🇮🇱', zone: 'Asia/Jerusalem', offset: 2 },
-  { label: '파리 🇫🇷', zone: 'Europe/Paris', offset: 1 },
-  { label: '런던 🇬🇧', zone: 'Europe/London', offset: 0 },
-  { label: '뉴욕 🇺🇸', zone: 'America/New_York', offset: -5 },
+  { label: '서울 🇰🇷', zone: 'Asia/Seoul', offset: 9, priority: 1 },
+  { label: '뉴욕 🇺🇸', zone: 'America/New_York', offset: -5, priority: 1 },
+  { label: '런던 🇬🇧', zone: 'Europe/London', offset: 0, priority: 2 },
+  { label: '베이징 🇨🇳', zone: 'Asia/Shanghai', offset: 8, priority: 2 },
+  { label: '두바이 🇦🇪', zone: 'Asia/Dubai', offset: 4, priority: 3 },
+  { label: '도쿄 🇯🇵', zone: 'Asia/Tokyo', offset: 9, priority: 2 },
+  { label: '파리 🇫🇷', zone: 'Europe/Paris', offset: 1, priority: 3 },
+  { label: '이스라엘 🇮🇱', zone: 'Asia/Jerusalem', offset: 2, priority: 3 },
+  { label: '프랑크푸르트 🇩🇪', zone: 'Europe/Berlin', offset: 1, priority: 3 },
 ];
 
 const GlobalClockTicker = memo(() => {
@@ -79,7 +82,10 @@ const GlobalClockTicker = memo(() => {
       {ZONES.map(z => {
         const { date, timeStr, isOpen, isDay } = getZoneData(z.zone);
         return (
-          <div key={z.zone} className={styles.worldClockCard}>
+          <div 
+            key={z.zone} 
+            className={`${styles.worldClockCard} ${styles[`priority${z.priority}`]}`}
+          >
              <div className={styles.clockCardHeader}>
                 <span className={styles.cityLabel}>{z.label}</span>
                 <div className={`${styles.marketStatus} ${isOpen ? styles.marketOpen : styles.marketClosed}`}>
@@ -136,7 +142,10 @@ const BreakingNewsTicker = memo(({ news }: { news: NewsItem[] }) => {
 BreakingNewsTicker.displayName = 'BreakingNewsTicker';
 
 export default function Dashboard() {
-  const [theme, setTheme] = useState('dark'); // 기본값을 다크로 변경
+  // ✅ 단일 엔트리포인트: WebSocket + 환율 초기화
+  useMarketData();
+
+  const [theme, setTheme] = useState('dark');
   const [country, setCountry] = useState('KR');
   const [topic, setTopic] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -152,6 +161,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [glossaryModalOpen, setGlossaryModalOpen] = useState(false);
+  const setBreakingNews = useUIStore((s) => s.setBreakingNews);
 
   // 로컬 스토리지에서 상태 복구
   useEffect(() => {
@@ -200,6 +210,12 @@ export default function Dashboard() {
       const fetchedItems: NewsItem[] = data.items || [];
       const items = fetchedItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
       
+      // 긴급 뉴스 감지 → store 업데이트
+      const urgentNews = items.filter(n => n.importance === 'URGENT');
+      if (urgentNews.length > 0) {
+        setBreakingNews(urgentNews);
+      }
+
       setNews(prev => {
         if (prev.length === items.length && prev.every((n, i) => n.id === items[i]?.id)) return prev;
         return items;
@@ -241,6 +257,8 @@ export default function Dashboard() {
 
   return (
     <main className={styles.dashboard} data-theme={theme}>
+      <BreakingNewsBanner />
+      <AlertManager />
       <div className={styles.headerLayout}>
         <div className={styles.brandSection}>
           <div className={styles.brandTop}>

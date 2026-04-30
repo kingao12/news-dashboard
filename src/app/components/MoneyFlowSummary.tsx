@@ -18,6 +18,7 @@ const CATEGORIES = [
   { id: 'STYLE', label: '스타일', icon: <Activity size={14}/> },
   { id: 'BOND', label: '금리/채권', icon: <TrendingUp size={14}/> },
   { id: 'CRYPTO', label: '크립토', icon: <Coins size={14}/> },
+  { id: 'REAL_ESTATE', label: '부동산', icon: <Briefcase size={14}/> },
 ];
 
 const FLOW_DATA: Record<string, any[]> = {
@@ -72,6 +73,13 @@ const FLOW_DATA: Record<string, any[]> = {
     { name: '밈코인', symbol: 'MEME', value: -4500, type: 'out' },
     { name: '상위 알트코인', symbol: 'ALTS', value: 2100, type: 'in' },
     { name: '거래소 유출입', symbol: 'EXCHANGE', value: -840, type: 'out' },
+  ],
+  REAL_ESTATE: [
+    { name: '상업용 부동산', symbol: 'CRE', value: -14500, type: 'out' },
+    { name: '주거용 리츠', symbol: 'RES', value: 3200, type: 'in' },
+    { name: '모기지 채권', symbol: 'MBS', value: 8400, type: 'in' },
+    { name: '인프라/데이터센터', symbol: 'INFRA', value: 12500, type: 'in' },
+    { name: '물류센터', symbol: 'LOGIS', value: 4100, type: 'in' },
   ]
 };
 
@@ -80,12 +88,13 @@ const INSIGHTS: Record<string, string> = {
   REGION: "중국 증시의 불확실성이 지속되면서 이탈한 자본이 미국 빅테크와 일본 반도체 섹터로 집중 이동하고 있습니다.",
   CRYPTO: "스테이블코인 공급량이 역대 최고치에 근접하며, 이는 비트코인 추가 상승을 위한 대기 매수 자금으로 해석됩니다.",
   SECTOR: "AI 연산 수요 폭증으로 인해 반도체 섹터 주도의 독주 체제가 이어지고 있으며, 타 섹터의 자금을 흡수하는 Black Hole 현상이 관찰됩니다.",
+  REAL_ESTATE: "고금리 장기화 우려로 상업용 부동산(CRE)에서 자본 이탈이 지속되는 반면, AI 붐에 힘입어 데이터센터 및 전력 인프라 관련 리츠로는 강력한 자금 유입이 관찰됩니다.",
 };
 
 const formatVal = (val: number) => {
   const abs = Math.abs(val);
   if (abs >= 1000) return `${val > 0 ? '+' : ''}${(val / 1000).toFixed(1)}B`;
-  return `${val > 0 ? '+' : ''}${val}M`;
+  return `${val > 0 ? '+' : ''}${val.toFixed(1)}M`;
 };
 
 const MoneyFlowSummary = memo(() => {
@@ -94,9 +103,23 @@ const MoneyFlowSummary = memo(() => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('ASSET');
   const [viewMode, setViewMode] = useState<'list' | 'heatmap'>('heatmap');
+  const [flowData, setFlowData] = useState(FLOW_DATA);
 
   useEffect(() => {
     setMounted(true);
+    const interval = setInterval(() => {
+      setFlowData(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(cat => {
+          next[cat] = next[cat].map(item => {
+            const noise = item.value * (Math.random() * 0.04 - 0.02);
+            return { ...item, value: item.value + noise };
+          });
+        });
+        return next;
+      });
+    }, 2500);
+    return () => clearInterval(interval);
   }, []);
 
   // 모달 열림 시 배경 스크롤 방지 (Scroll Lock)
@@ -111,7 +134,7 @@ const MoneyFlowSummary = memo(() => {
     };
   }, [isModalOpen]);
 
-  const currentFlows = useMemo(() => FLOW_DATA[activeTab] || [], [activeTab]);
+  const currentFlows = useMemo(() => flowData[activeTab] || [], [flowData, activeTab]);
   const currentInsight = useMemo(() => INSIGHTS[activeTab] || INSIGHTS.ASSET, [activeTab]);
 
   const handleFlowClick = (item: any) => {
@@ -146,7 +169,7 @@ const MoneyFlowSummary = memo(() => {
               <div className={styles.liveTagWrap}><span className={styles.liveDot} /> LIVE</div>
             </div>
             <div className={styles.miniList}>
-              {FLOW_DATA.ASSET.slice(0, 4).map((item, i) => (
+              {[...flowData.ASSET.slice(0, 3), ...flowData.CRYPTO.slice(0, 2)].map((item, i) => (
                 <div key={i} className={styles.gridRow}>
                   <div className={styles.colLabel}>{item.name}</div>
                   <div className={styles.colTrack}>
@@ -155,7 +178,7 @@ const MoneyFlowSummary = memo(() => {
                       className={styles.trackFill} 
                       style={{ 
                         backgroundColor: item.type === 'in' ? '#10b981' : '#f43f5e',
-                        width: `${Math.min((Math.abs(item.value) / 15000) * 100, 100)}%`,
+                        width: `${Math.min((Math.abs(item.value) / 15000) * 50, 50)}%`,
                         left: item.type === 'in' ? '50%' : 'auto',
                         right: item.type === 'in' ? 'auto' : '50%'
                       }} 
@@ -247,7 +270,7 @@ const MoneyFlowSummary = memo(() => {
                       <div className={styles.flowList}>
                         {currentFlows.map((item, i) => {
                           const isOut = item.type === 'out';
-                          const ratio = Math.min((Math.abs(item.value) / 20000) * 100, 100);
+                          const ratio = Math.min((Math.abs(item.value) / 20000) * 50, 50);
                           return (
                             <div key={i} className={styles.flowRow} onClick={() => handleFlowClick(item)}>
                               <div className={styles.flowInfo}>

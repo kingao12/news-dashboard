@@ -268,11 +268,14 @@
   letter-spacing: 0.05em;
 }
 
+/* ── 세계 시간 그리드 ── */
 .clockGrid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 0.6rem;
+  /* 최소 너비 초과 시 가로 스크롤 (폴백) */
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding-bottom: 2px;
 }
 
 .clockGrid::-webkit-scrollbar {
@@ -285,21 +288,48 @@
 }
 
 .worldClockCard {
-  min-width: 110px;
-  flex: 0 0 auto;
   background: var(--bg-surface);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 0.7rem 0.8rem;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  transition: border-color 0.2s;
+  gap: 5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 120px;  /* 절대 최소값 — 잘림 방지 */
 }
 
 .worldClockCard:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
+/* Priority 기반 숨김 — 1440px 이하에서 중요도 3 숨김 */
+@media (max-width: 1440px) {
+  .priority3 { display: none; }
+  .clockGrid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+
+/* 1280px 이하에서 중요도 2도 숨김 */
+@media (max-width: 1280px) {
+  .priority2 { display: none; }
+  .clockGrid { grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); }
+}
+
+/* 1024px 이하 */
+@media (max-width: 1024px) {
+  .worldClockCard { padding: 8px 10px; }
+  .clockGrid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+}
+
+/* Dashboard Global Scaling */
+:root { --terminal-scale: 1; }
+
+@media (max-width: 1920px) { :root { --terminal-scale: 1; } }
+@media (max-width: 1440px) { :root { --terminal-scale: 0.97; } }
+@media (max-width: 1280px) { :root { --terminal-scale: 0.92; } }
+@media (max-width: 1024px) { :root { --terminal-scale: 0.87; } }
 
 .clockCardHeader {
   display: flex;
@@ -308,16 +338,20 @@
 }
 
 .cityLabel {
-  font-size: 0.7rem;
-  font-weight: 1000;
+  font-size: clamp(0.6rem, 0.8vw, 0.7rem);
+  font-weight: 900;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .marketStatus {
   font-size: 0.55rem;
-  font-weight: 1000;
+  font-weight: 900;
   padding: 1px 4px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .marketOpen {
@@ -331,8 +365,9 @@
 }
 
 .mainTime {
-  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
-  font-weight: 1000;
+  /* clamp: 최소 0.8rem, 뷰포트 기준 가변, 최대 1.05rem */
+  font-size: clamp(0.8rem, 1vw, 1.05rem);
+  font-weight: 900;
   color: var(--text-primary);
   font-family: var(--font-mono);
   letter-spacing: -0.04em;
@@ -346,15 +381,16 @@
 }
 
 .shortDate {
-  font-size: 0.6rem;
+  font-size: clamp(0.55rem, 0.7vw, 0.62rem);
   font-weight: 800;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 /* --- Dashboard Grid --- */
 .gridContainer {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr minmax(400px, 25vw);
   gap: 1.5rem;
   align-items: start;
 }

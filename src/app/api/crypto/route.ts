@@ -90,7 +90,7 @@ export async function GET(request: Request) {
         market_cap: coin.marketCap,
         price_change_percentage_24h: isTarget ? changePct : 0.5
       };
-    });
+    }).sort((a, b) => b.market_cap - a.market_cap);
 
     const finalData = {
       chart: {
