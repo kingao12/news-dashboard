@@ -108,9 +108,17 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
 
               <section className={styles.intelligenceBox}>
                 <div className={styles.aiHeader}>
-                  <div className={styles.aiLabel}><Sparkles size={16} className={styles.sparkleIcon} />AI 인텔리전스 분석</div>
+                  <div className={styles.aiLabel}><Sparkles size={16} className={styles.sparkleIcon} />MIA 인텔리전스 분석</div>
                   <div className={styles.aiBadge}>Analysis Complete</div>
                 </div>
+                
+                <div className={styles.miaIntelligence}>
+                  <p className={styles.miaQuote}>
+                    "이번 보도는 단순한 뉴스 그 이상의 의미를 가집니다. {item.source}의 데이터에 따르면 자본 시장의 유동성 흐름이 특정 섹터로 집중되는 시그널이 포착되었습니다."
+                  </p>
+                  <span className={styles.miaAuthor}>— MIA INTELLIGENCE AGENT</span>
+                </div>
+
                 <div className={styles.summarySection}>
                   <h4 className={styles.smallHeading}>3줄 핵심 요약</h4>
                   <ul className={styles.summaryList}>
@@ -118,6 +126,47 @@ const NewsDrawer = memo(({ item, onClose }: NewsDrawerProps) => {
                     <li>AI 분석 결과 단기적으로 자산군 전반에 높은 수준의 상관관계가 포착되었습니다.</li>
                     <li>해당 뉴스는 거시 경제의 펀더멘탈 변화보다는 심리적 변동에 더 큰 영향을 줄 것으로 보입니다.</li>
                   </ul>
+                </div>
+              </section>
+
+              <section className={styles.sentimentSection}>
+                <h4 className={styles.sectionTitle}><Globe size={16} /> 시장 정서 지수 (Mia Sentiment)</h4>
+                <div className={styles.gaugeContainer}>
+                  <div 
+                    className={styles.gaugeFill} 
+                    style={{ 
+                      width: '100%',
+                      background: `linear-gradient(90deg, #f43f5e 0%, #f59e0b 50%, #10b981 100%)`
+                    }} 
+                  />
+                  <div 
+                    className={styles.gaugeMarker} 
+                    style={{ left: `${(item as any).sentiment === 'POSITIVE' ? 85 : (item as any).sentiment === 'NEGATIVE' ? 15 : 50}%` }} 
+                  />
+                </div>
+                <div className={styles.gaugeLabels}>
+                  <span>Extreme Fear</span>
+                  <span>Neutral</span>
+                  <span>Extreme Greed</span>
+                </div>
+                
+                <div className={styles.factorGrid}>
+                  <div className={styles.factorItem}>
+                    <span className={styles.factorDot} style={{ background: '#10b981' }} />
+                    기관 수급 유입
+                  </div>
+                  <div className={styles.factorItem}>
+                    <span className={styles.factorDot} style={{ background: '#f59e0b' }} />
+                    거래량 급증
+                  </div>
+                  <div className={styles.factorItem}>
+                    <span className={styles.factorDot} style={{ background: '#3b82f6' }} />
+                    글로벌 거시 호재
+                  </div>
+                  <div className={styles.factorItem}>
+                    <span className={styles.factorDot} style={{ background: '#f43f5e' }} />
+                    단기 차익 실현
+                  </div>
                 </div>
               </section>
 

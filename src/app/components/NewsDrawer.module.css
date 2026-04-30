@@ -686,3 +686,108 @@
   justify-content: center;
   cursor: pointer;
 }
+
+/* --- New Expanded Features --- */
+.sentimentSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 1.5rem;
+}
+
+.gaugeContainer {
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.gaugeFill {
+  height: 100%;
+  transition: all 1s ease-out;
+}
+
+.gaugeMarker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: white;
+  z-index: 2;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.gaugeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 1000;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.factorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.factorItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-glass);
+}
+
+.factorDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.miaIntelligence {
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+}
+
+.miaQuote {
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.miaAuthor {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  margin-top: 0.5rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.clickHint {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.55rem;
+  font-weight: 1000;
+  color: var(--accent-primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.impactCard:hover .clickHint {
+  opacity: 0.8;
+}
