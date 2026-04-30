@@ -605,7 +605,7 @@ export default function MarketWidget() {
                 </div>
                 <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 800 }}>
                   <div className={styles.itemPrice}>
-                    {activeTab === 'domestic' ? fmtKRW(item.current_price) : `$${formatVal(item.current_price)}`}
+                    {activeTab === 'domestic' ? fmtKRW(item.current_price) : fmtUSD(item.current_price)}
                   </div>
                   <div className={styles.itemMarketCap}>
                     {activeTab === 'domestic' ? `₩${(item.market_cap / 1000000000000).toFixed(1)}조` : `₩${(item.market_cap / 100000000).toFixed(0)}억`}
