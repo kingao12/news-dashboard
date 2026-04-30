@@ -293,7 +293,9 @@ const MoneyFlowSummary = memo(() => {
                           const absVal = Math.abs(item.value);
                           // 면적을 값의 제곱근에 비례하게 설정 (Treemap 느낌)
                           const sizeRatio = Math.sqrt(absVal / 20000); 
-                          const bgIntensity = Math.min(0.1 + (absVal / 25000), 0.8);
+                          const bgIntensity = Math.min(0.15 + (absVal / 18000), 0.95);
+                          const color = isOut ? `rgba(244, 63, 94, ${bgIntensity})` : `rgba(16, 185, 129, ${bgIntensity})`;
+                          const glow = isOut ? `0 0 15px rgba(244, 63, 94, ${bgIntensity * 0.3})` : `0 0 15px rgba(16, 185, 129, ${bgIntensity * 0.3})`;
                           
                           return (
                             <motion.div 
@@ -301,12 +303,14 @@ const MoneyFlowSummary = memo(() => {
                               initial={{ opacity: 0, scale: 0.9 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: i * 0.05 }}
-                              className={styles.heatItem}
+                              className={styles.heatmapBox}
                               onClick={() => handleFlowClick(item)}
+                              whileHover={{ scale: 1.02, zIndex: 10, brightness: 1.2 }}
                               style={{ 
-                                backgroundColor: isOut ? `rgba(244, 63, 94, ${bgIntensity})` : `rgba(16, 185, 129, ${bgIntensity})`,
-                                border: `1px solid ${isOut ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
-                                flex: `1 1 ${sizeRatio * 180}px`,
+                                flex: sizeRatio, 
+                                backgroundColor: color,
+                                boxShadow: glow,
+                                border: `1px solid ${isOut ? 'rgba(244, 63, 94, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
                                 minHeight: `${80 + sizeRatio * 60}px`
                               }}
                             >

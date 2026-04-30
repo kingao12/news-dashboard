@@ -546,7 +546,10 @@ export default function MarketWidget() {
             {/* ── 메인 차트 ── */}
             <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
               {activeTab === 'domestic' && data?.chart?.series ? (
-                 <ApexCandleChart seriesData={data.chart.series} theme={isDark ? 'dark' : 'light'} />
+                <ApexCandleChart 
+                  seriesData={data.chart.series} 
+                  theme={isDark ? 'dark' : 'light'} 
+                />
               ) : (
                 <TradingViewChart
                   key={activeSymbol + interval + chartStyle + activeTab}

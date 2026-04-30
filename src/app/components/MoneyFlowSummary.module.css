@@ -470,25 +470,25 @@
   min-height: 400px;
 }
 
-.heatItem {
+.heatmapBox {
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(4px);
 }
 
-.heatItem:hover {
-  transform: scale(1.02);
-  filter: brightness(1.1);
+.heatmapBox:hover {
+  transform: translateY(-4px) scale(1.03);
+  filter: brightness(1.25) saturate(1.2);
   z-index: 10;
-  box-shadow: var(--card-shadow);
 }
 
 .heatLabel {
